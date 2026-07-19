@@ -1,87 +1,33 @@
-# CLAUDE.md
+# Repository Guidelines
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## 项目结构与模块组织
 
-## 项目概述
+本项目是基于 Next.js 15 App Router 的“地点记忆地图”，使用 TypeScript、React 19 与 Tailwind CSS v4。路由与布局位于 `app/`，例如 `app/page.tsx`、`app/scene/page.tsx` 和 `app/upload/page.tsx`；不要新增 `pages/` 或其他路由目录。业务组件放在 `src/components/`，其中 `ui/` 为 shadcn/ui 基础组件，`scene/` 与 `map/` 按功能划分。共享逻辑和数据位于 `src/lib/`，Hooks 位于 `src/hooks/`，静态资源放在 `public/assets/`，D1 数据库结构和种子数据位于 `db/`。
 
-"地点记忆地图"（在场）— 一个原型应用。用户在某个地点留下文字 + 照片作为记忆，朋友来到同一地点后可看到之前的记录并续写自己的版本。视觉风格为「城市观察手记」：暖白 / 深墨 / 朱红 / 衬线标题。
+## 构建、检查与本地开发
 
-部署目标：**Cloudflare Workers**，通过 `@opennextjs/cloudflare` 适配。
+统一使用 Bun，不要混用 npm、yarn 或 pnpm。
 
-## 常用命令
+- `bun install`：安装锁定在 `bun.lock` 中的依赖。
+- `bun run dev`：启动本地开发服务器，默认地址为 `http://localhost:3000`。
+- `bun run build`：执行生产构建并检查 Next.js 集成问题。
+- `bun run lint`：运行 ESLint 与 Prettier 规则检查。
+- `bun run format`：格式化仓库文件。
+- `bun run preview`：通过 OpenNext 和 Wrangler 本地预览 Cloudflare 构建。
+- `bun run deploy`：构建并部署到 Cloudflare Workers；仅在明确授权后执行。
 
-```bash
-bun run dev        # 启动 Next.js 开发服务器（端口 3000）
-bun run build      # 生产构建（Next.js）
-bun run start      # 启动生产服务器
-bun run lint       # Next.js lint
-bun run format     # Prettier 格式化
-bun run preview    # Cloudflare 本地预览（wrangler dev）
-bun run deploy     # 部署到 Cloudflare（opennextjs-cloudflare + wrangler deploy）
-```
+## 编码风格与命名约定
 
-包管理器是 **Bun**，请用 `bun install` / `bun add`，不要用 npm / yarn。
+遵循 `.prettierrc`：双引号、分号、尾随逗号、100 字符行宽。React 组件使用 PascalCase（如 `MapboxMap.tsx`），Hooks 使用 `use-*.tsx`，工具模块使用小写或 camelCase。通过 `@/*` 引用 `src/*`。默认使用 Server Components；仅在需要 Hooks、浏览器 API 或交互状态时添加 `"use client"`。优先复用 `src/components/ui/` 和 `src/lib/utils.ts` 中的 `cn()`。
 
-**没有配置测试框架** — 没有测试文件、没有 Vitest/Jest 等 runner、没有 test 脚本。
+## 测试与验证
 
-## 架构
+当前未配置测试框架、覆盖率门槛或 `test` 脚本。每次修改至少运行 `bun run lint` 和 `bun run build`，并手动验证受影响路由。新增测试基础设施前先达成共识；测试文件建议与模块同目录，命名为 `*.test.ts` 或 `*.test.tsx`。
 
-### 框架：Next.js App Router
+## 提交与合并请求
 
-- `app/` 目录下使用 **App Router 文件路由**，每个 `page.tsx` 文件对应一个路由。
-- **不要**创建 `src/pages/`、`src/routes/` 或任何其他路由目录。
-- 唯一的根布局是 `app/layout.tsx`，必须保留其中的 `<html>` 和 `<body>`。
-- App Router 约定：`layout.tsx`（布局）、`page.tsx`（页面）、`not-found.tsx`（404）、`error.tsx`（错误边界）、`loading.tsx`（加载态）。
-- `app/` 下所有使用 React hooks 的组件必须在顶部加 `"use client"`。默认是 Server Components。
+历史提交采用简短的类型前缀，例如 `feat: Mapbox 真实地图...`、`polish: ...`、`migrate: ...`。继续使用 `<type>: <简洁说明>`，一次提交只处理一个主题。合并请求应说明用户可见变化、验证命令和关联问题；涉及界面时附桌面端与移动端截图，涉及数据库时说明 `db/schema.sql` 或迁移影响。
 
-### 路由结构
+## 配置与安全
 
-| 文件                  | URL                                                              |
-| --------------------- | ---------------------------------------------------------------- |
-| `app/layout.tsx`      | 根布局（所有页面共用）                                           |
-| `app/page.tsx`        | `/` — 主页地图 + 地点列表（支持 `?place=xxx` 深链）              |
-| `app/m/page.tsx`      | `/m` — 场景手机版                                                |
-| `app/scene/page.tsx`  | `/scene` — 场景桌面版                                            |
-| `app/upload/page.tsx` | `/upload` — 上传流程（支持 `?from=...&placeId=...&sceneId=...`） |
-| `app/not-found.tsx`   | 404 页面                                                         |
-| `app/error.tsx`       | 客户端错误边界                                                   |
-
-### 路径别名
-
-`@/*` → `./src/*`（在 `tsconfig.json` 中配置）。
-
-### 关键模块
-
-- `src/components/PrototypeApp.tsx` — 主应用：地图屏 + 地点详情屏。`"use client"` 组件，接收 `initialPlaceId` / `initialFilter` props，用 `useRouter` 从 `next/navigation` 做 URL 导航。
-- `src/components/scene/` — 场景相关组件：`SceneDesktop`、`SceneMobile`、`CompareSlider`（对比滑块）、`UploadConfirm`。全部都是 `"use client"` 组件。
-- `src/lib/sceneData.ts` — 领域类型（`Place`、`Scene`、`Moment`、`Visibility`、`Season`）及"同视角不同时刻"功能的 mock 数据。
-- `src/lib/mockData.ts` — 主原型的 `Place[]` 和 `MemoryEntry[]` mock 数据。
-
-### UI 层
-
-- **shadcn/ui**（new-york 风格）位于 `src/components/ui/`。配置：`components.json`。组件在本地，直接编辑即可。所有组件都已加 `"use client"`。
-- **Tailwind CSS v4**，通过 `@tailwindcss/postcss` 集成到 Next.js（见 `postcss.config.mjs`）。主题 token 都是 CSS 自定义属性。
-- **Radix UI** 是 shadcn 组件的底层原语。
-- **Lucide** 图标库。
-- **cn()** 工具函数在 `src/lib/utils.ts` — `clsx` + `tailwind-merge`。
-
-### Next.js 配置
-
-- `next.config.ts` — Next.js 配置。
-- `postcss.config.mjs` — PostCSS 配置（Tailwind v4 集成）。
-- `opennext.config.json` — `@opennextjs/cloudflare` 适配配置。
-- `wrangler.jsonc` — Cloudflare 部署配置。
-- **不要添加重复的 Tailwind / React 插件** — Next.js 已内置处理。
-
-### Cloudflare 部署
-
-使用 `@opennextjs/cloudflare` 把 Next.js 构建产物适配为 Cloudflare Workers 格式：
-
-- `bun run preview` — 本地用 wrangler 预览
-- `bun run deploy` — 部署到 Cloudflare
-
-## 代码风格
-
-- Prettier：100 字符宽、分号、双引号、尾逗号。
-- ESLint：`eslint-config-next` + Prettier 集成。
-- `.next`、`dist`、`.output`、`.open-next` 被忽略。
+将 `NEXT_PUBLIC_MAPBOX_TOKEN` 等本地配置放入 `.env.local`，不要提交密钥。Cloudflare D1 绑定名为 `DB`；修改 `wrangler.jsonc` 或部署配置时，确认本地预览与生产环境保持一致。
