@@ -5,7 +5,8 @@
       "Read(//home/**)",
       "Bash(ls -la /home/user/)",
       "Bash(~/.bun/bin/bun run *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(~/.bun/bin/bun add *)"
     ]
   }
 }

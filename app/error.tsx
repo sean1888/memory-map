@@ -17,9 +17,7 @@ export default function Error({
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          页面加载失败
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">页面加载失败</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           出了点问题。你可以刷新重试，或回到首页。
         </p>

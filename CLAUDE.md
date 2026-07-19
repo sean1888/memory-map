@@ -36,15 +36,15 @@ bun run deploy     # 部署到 Cloudflare（opennextjs-cloudflare + wrangler dep
 
 ### 路由结构
 
-| 文件 | URL |
-|------|-----|
-| `app/layout.tsx` | 根布局（所有页面共用） |
-| `app/page.tsx` | `/` — 主页地图 + 地点列表（支持 `?place=xxx` 深链） |
-| `app/m/page.tsx` | `/m` — 场景手机版 |
-| `app/scene/page.tsx` | `/scene` — 场景桌面版 |
+| 文件                  | URL                                                              |
+| --------------------- | ---------------------------------------------------------------- |
+| `app/layout.tsx`      | 根布局（所有页面共用）                                           |
+| `app/page.tsx`        | `/` — 主页地图 + 地点列表（支持 `?place=xxx` 深链）              |
+| `app/m/page.tsx`      | `/m` — 场景手机版                                                |
+| `app/scene/page.tsx`  | `/scene` — 场景桌面版                                            |
 | `app/upload/page.tsx` | `/upload` — 上传流程（支持 `?from=...&placeId=...&sceneId=...`） |
-| `app/not-found.tsx` | 404 页面 |
-| `app/error.tsx` | 客户端错误边界 |
+| `app/not-found.tsx`   | 404 页面                                                         |
+| `app/error.tsx`       | 客户端错误边界                                                   |
 
 ### 路径别名
 
@@ -76,6 +76,7 @@ bun run deploy     # 部署到 Cloudflare（opennextjs-cloudflare + wrangler dep
 ### Cloudflare 部署
 
 使用 `@opennextjs/cloudflare` 把 Next.js 构建产物适配为 Cloudflare Workers 格式：
+
 - `bun run preview` — 本地用 wrangler 预览
 - `bun run deploy` — 部署到 Cloudflare
 

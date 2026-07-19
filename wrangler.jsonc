@@ -4,6 +4,13 @@
   "main": ".open-next/worker.js",
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  }
+    "binding": "ASSETS",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "memory-map-db",
+      "database_id": "PLACEHOLDER_REPLACE_AFTER_WRANGLER_D1_CREATE",
+    },
+  ],
 }

@@ -14,7 +14,5 @@ export default async function Page({
 }) {
   const { from, placeId, sceneId } = await searchParams;
   const validFrom = from === "place" || from === "scene" ? from : "global";
-  return (
-    <UploadConfirm from={validFrom} placeId={placeId} sceneId={sceneId} />
-  );
+  return <UploadConfirm from={validFrom} placeId={placeId} sceneId={sceneId} />;
 }

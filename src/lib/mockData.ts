@@ -13,8 +13,10 @@ export type Place = {
   id: string;
   name: string;
   city: string;
-  x: number; // % on map
+  x: number; // % on map（旧坐标，保留兼容）
   y: number;
+  latitude: number; // 真实纬度
+  longitude: number; // 真实经度
   entries: MemoryEntry[];
 };
 
@@ -28,6 +30,8 @@ export const places: Place[] = [
     city: "杭州",
     x: 32,
     y: 44,
+    latitude: 30.2569,
+    longitude: 120.1451,
     entries: [
       {
         id: "linxia",
@@ -63,6 +67,8 @@ export const places: Place[] = [
     city: "上海",
     x: 58,
     y: 38,
+    latitude: 31.2089,
+    longitude: 121.4366,
     entries: [
       {
         id: "e1",
@@ -82,6 +88,8 @@ export const places: Place[] = [
     city: "厦门",
     x: 46,
     y: 62,
+    latitude: 24.4479,
+    longitude: 118.065,
     entries: [
       {
         id: "e2",
@@ -101,6 +109,8 @@ export const places: Place[] = [
     city: "北京",
     x: 70,
     y: 26,
+    latitude: 39.984,
+    longitude: 116.4952,
     entries: [
       {
         id: "e3",
@@ -120,6 +130,8 @@ export const places: Place[] = [
     city: "成都",
     x: 24,
     y: 68,
+    latitude: 30.6703,
+    longitude: 104.0547,
     entries: [
       {
         id: "e4",
@@ -139,6 +151,8 @@ export const places: Place[] = [
     city: "广州",
     x: 40,
     y: 78,
+    latitude: 23.1057,
+    longitude: 113.243,
     entries: [
       {
         id: "e5",
