@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
   ArrowLeft,
   Check,
@@ -57,9 +59,11 @@ export function UploadConfirm({
   const [manualLocation, setManualLocation] = useState<"current" | "map" | null>(null);
 
   // 根据来源决定返回目标
-  const backTarget = from === "scene" ? "/scene" : from === "place" && placeId ? "/" : "/";
-  const backSearch =
-    from === "place" && placeId ? { place: placeId } : from === "global" ? {} : undefined;
+  const backHref = (() => {
+    if (from === "scene") return "/scene";
+    if (from === "place" && placeId) return `/?place=${placeId}`;
+    return "/";
+  })();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,8 +87,7 @@ export function UploadConfirm({
         {/* Header */}
         <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b border-border bg-background/90 backdrop-blur px-3">
           <Link
-            to={backTarget}
-            search={backSearch}
+            href={backHref}
             aria-label="返回"
             className="grid h-9 w-9 place-items-center rounded-[8px] text-muted-foreground hover:text-foreground"
           >
@@ -433,14 +436,13 @@ export function UploadConfirm({
 
             <div className="mt-4 flex gap-2">
               <Link
-                to="/scene"
+                href="/scene"
                 className="inline-flex h-10 flex-1 items-center justify-center rounded-[8px] border border-border text-sm hover:border-foreground/40"
               >
                 查看视角时间轴
               </Link>
               <Link
-                to={backTarget}
-                search={backSearch}
+                href={backHref}
                 className="inline-flex h-10 flex-1 items-center justify-center rounded-[8px] bg-accent text-accent-foreground text-sm"
               >
                 {from === "scene" ? "返回场景" : from === "place" ? "返回地点" : "返回地图"}

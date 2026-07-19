@@ -4,7 +4,8 @@
       "Bash(find /home/user -maxdepth 1 -type f -o -type d | head -50)",
       "Read(//home/**)",
       "Bash(ls -la /home/user/)",
-      "Bash(~/.bun/bin/bun run *)"
+      "Bash(~/.bun/bin/bun run *)",
+      "Bash(git checkout *)"
     ]
   }
 }

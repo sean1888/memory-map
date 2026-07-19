@@ -1,5 +1,7 @@
+"use client";
+
 import { useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { MapPin, Compass, Calendar, Cloud, Users, Plus, Smartphone, Camera } from "lucide-react";
 import { CompareSlider } from "@/components/scene/CompareSlider";
 import {
@@ -285,7 +287,7 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <Link to="/" className="inline-flex items-center gap-2">
+        <Link href="/" className="inline-flex items-center gap-2">
           <span className="inline-block h-2 w-2 rounded-full bg-accent" />
           <span className="font-editorial text-base">在场</span>
           <span className="hidden sm:inline text-xs text-muted-foreground">
@@ -294,14 +296,13 @@ function TopBar() {
         </Link>
         <nav className="ml-auto flex items-center gap-1 text-sm text-muted-foreground">
           <Link
-            to="/m"
+            href="/m"
             className="hidden sm:inline-flex h-9 items-center gap-1.5 rounded-[8px] px-2 hover:text-foreground"
           >
             <Smartphone size={14} /> 手机视图
           </Link>
           <Link
-            to="/upload"
-            search={{ from: "scene", sceneId: "shiqiao-ne" }}
+            href="/upload?from=scene&sceneId=shiqiao-ne"
             className="inline-flex h-9 items-center gap-1.5 rounded-[8px] px-2 hover:text-foreground"
           >
             <Camera size={14} /> 记录这一刻
@@ -382,8 +383,7 @@ function MapPanel({
         </p>
       </div>
       <Link
-        to="/upload"
-        search={{ from: "scene", sceneId: activeSceneId }}
+        href={`/upload?from=scene&sceneId=${activeSceneId}`}
         className="mt-3 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-accent text-accent-foreground text-sm hover:opacity-90"
       >
         <Plus size={15} /> 添加这个视角的新时刻

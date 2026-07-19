@@ -1,5 +1,7 @@
+"use client";
+
 import { useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowLeft, Share2, Plus, Cloud } from "lucide-react";
 import { CompareSlider } from "@/components/scene/CompareSlider";
 import { place, scene, moments, daysBetween } from "@/lib/sceneData";
@@ -24,7 +26,7 @@ export function SceneMobile() {
       <div className="mx-auto flex w-full max-w-105 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b border-border bg-background/90 backdrop-blur px-3">
           <Link
-            to="/"
+            href="/"
             aria-label="返回"
             className="grid h-9 w-9 place-items-center rounded-[8px] text-muted-foreground hover:text-foreground"
           >
@@ -109,8 +111,7 @@ export function SceneMobile() {
         >
           <div className="mx-auto flex w-full max-w-105 items-center gap-2 px-4 pt-3">
             <Link
-              to="/upload"
-              search={{ from: "scene", sceneId: "shiqiao-ne" }}
+              href="/upload?from=scene&sceneId=shiqiao-ne"
               className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-accent text-accent-foreground text-sm"
             >
               <Plus size={16} />

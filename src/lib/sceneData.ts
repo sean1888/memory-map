@@ -1,7 +1,7 @@
-import autumnImg from "@/assets/scene-autumn.jpg";
-import springImg from "@/assets/scene-spring.jpg";
-import winterImg from "@/assets/scene-winter.jpg";
-import uploadImg from "@/assets/upload-photo.jpg";
+const autumnImg = "/assets/scene-autumn.jpg";
+const springImg = "/assets/scene-spring.jpg";
+const winterImg = "/assets/scene-winter.jpg";
+const uploadImg = "/assets/upload-photo.jpg";
 
 export type Visibility = "participants" | "link" | "public";
 export type Season = "春" | "夏" | "秋" | "冬";

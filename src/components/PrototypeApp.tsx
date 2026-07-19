@@ -1,7 +1,10 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { MapPin, Plus, ArrowLeft, Users, Camera, X } from "lucide-react";
-import { places, primaryPlace, type Place, type MemoryEntry } from "@/lib/mockData";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { MapPin, Plus, ArrowLeft, Users, X } from "lucide-react";
+import { places, type Place, type MemoryEntry } from "@/lib/mockData";
 
 type Screen = "map" | "place";
 
@@ -12,7 +15,7 @@ export function PrototypeApp({
   initialPlaceId?: string;
   initialFilter?: string;
 }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [filter, setFilter] = useState<string>(initialFilter ?? "all");
 
   // 根据 URL 中的 place 参数决定当前屏和当前地点
@@ -25,19 +28,20 @@ export function PrototypeApp({
   }, [initialPlaceId]);
 
   const openPlace = (p: Place) => {
-    navigate({ to: "/", search: { place: p.id } });
+    router.push(`/?place=${p.id}`);
   };
 
   const goHome = () => {
-    navigate({ to: "/", search: {} });
+    router.push("/");
   };
 
   const updateFilter = (f: string) => {
     setFilter(f);
-    navigate({
-      to: "/",
-      search: { place: initialPlaceId, filter: f === "all" ? undefined : f },
-    });
+    const params = new URLSearchParams();
+    if (initialPlaceId) params.set("place", initialPlaceId);
+    if (f !== "all") params.set("filter", f);
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
   };
 
   return (
@@ -79,14 +83,13 @@ function TopBar({
           </button>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            to="/upload"
-            search={{ from: "global" }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-accent px-3 text-sm text-accent-foreground"
-          >
-            <Plus size={15} />
-            <span>记录这一刻</span>
-          </Link>
+            <Link
+              href="/upload?from=global"
+              className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-accent px-3 text-sm text-accent-foreground"
+            >
+              <Plus size={15} />
+              <span>记录这一刻</span>
+            </Link>
         </div>
       </div>
     </header>
@@ -149,8 +152,7 @@ function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-medium">地点记忆</h2>
             <Link
-              to="/upload"
-              search={{ from: "global" }}
+              href="/upload?from=global"
               className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
             >
               <Plus size={12} /> 记录这一刻
@@ -324,12 +326,10 @@ function PlaceScreen({
           {authors.length} 位朋友在这里留下了 {authors.length} 段记忆
         </p>
         <Link
-          to="/scene"
-          className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-border bg-surface px-3 text-sm hover:border-foreground/40"
+          href="/scene"
+          className="mt-4 text-sm text-accent hover:underline"
         >
-          <Camera size={14} className="text-accent" />
-          查看这个视角的不同时间
-          <span className="text-muted-foreground">→</span>
+          查看这个视角的不同时间 →
         </Link>
       </div>
 
@@ -359,8 +359,7 @@ function PlaceScreen({
             你也在 {place.name}？记录一次，会自动收录到这个地点和对应的视角时间轴。
           </div>
           <Link
-            to="/upload"
-            search={{ from: "place", placeId: place.id }}
+            href={`/upload?from=place&placeId=${place.id}`}
             className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[8px] bg-accent px-4 text-sm text-accent-foreground"
           >
             <Plus size={15} />
