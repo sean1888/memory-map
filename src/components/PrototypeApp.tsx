@@ -1,69 +1,63 @@
-import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import {
-  MapPin,
-  Plus,
-  ArrowLeft,
-  Users,
-  Camera,
-  Cloud,
-  Calendar,
-  X,
-  MessageCircle,
-  Heart,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { MapPin, Plus, ArrowLeft, Users, Camera, X } from "lucide-react";
 import { places, primaryPlace, type Place, type MemoryEntry } from "@/lib/mockData";
-import { schemes, type SchemeId } from "@/lib/schemes";
 
 type Screen = "map" | "place";
 
-export function PrototypeApp({ schemeId }: { schemeId: SchemeId }) {
-  const scheme = schemes[schemeId];
-  const [screen, setScreen] = useState<Screen>("map");
-  const [activePlace, setActivePlace] = useState<Place>(primaryPlace);
-  const [filter, setFilter] = useState<"all" | string>("all");
+export function PrototypeApp({
+  initialPlaceId,
+  initialFilter,
+}: {
+  initialPlaceId?: string;
+  initialFilter?: string;
+}) {
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState<string>(initialFilter ?? "all");
+
+  // 根据 URL 中的 place 参数决定当前屏和当前地点
+  const activePlace = initialPlaceId ? places.find((p) => p.id === initialPlaceId) : undefined;
+  const screen: Screen = activePlace ? "place" : "map";
+
+  // 切换地点时重置 filter
+  useEffect(() => {
+    setFilter("all");
+  }, [initialPlaceId]);
 
   const openPlace = (p: Place) => {
-    setActivePlace(p);
-    setFilter("all");
-    setScreen("place");
+    navigate({ to: "/", search: { place: p.id } });
+  };
+
+  const goHome = () => {
+    navigate({ to: "/", search: {} });
+  };
+
+  const updateFilter = (f: string) => {
+    setFilter(f);
+    navigate({
+      to: "/",
+      search: { place: initialPlaceId, filter: f === "all" ? undefined : f },
+    });
   };
 
   return (
-    <div className={`scheme-${schemeId} min-h-screen bg-background text-foreground`}>
-      <TopBar
-        scheme={scheme.name}
-        schemeId={schemeId}
-        onHome={() => setScreen("map")}
-        screen={screen}
-        onBack={() => setScreen("map")}
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <TopBar screen={screen} onHome={goHome} onBack={goHome} />
 
-      {screen === "map" && (
-        <MapScreen schemeId={schemeId} onOpen={openPlace} />
-      )}
-      {screen === "place" && (
-        <PlaceScreen
-          schemeId={schemeId}
-          place={activePlace}
-          filter={filter}
-          setFilter={setFilter}
-        />
+      {screen === "map" && <MapScreen onOpen={openPlace} />}
+      {screen === "place" && activePlace && (
+        <PlaceScreen place={activePlace} filter={filter} setFilter={updateFilter} />
       )}
     </div>
   );
 }
 
-/* ---------- Top bar ---------- */
+/* ---------- 顶部栏 ---------- */
 function TopBar({
-  scheme,
-  schemeId,
   screen,
   onHome,
   onBack,
 }: {
-  scheme: string;
-  schemeId: SchemeId;
   screen: Screen;
   onHome: () => void;
   onBack: () => void;
@@ -79,27 +73,16 @@ function TopBar({
             <ArrowLeft size={16} /> 返回
           </button>
         ) : (
-          <button
-            onClick={onHome}
-            className="inline-flex items-center gap-2 text-sm font-medium"
-          >
+          <button onClick={onHome} className="inline-flex items-center gap-2 text-sm font-medium">
             <MapPin size={16} className="text-accent" />
-            <span className={schemeId === "a" ? "font-editorial text-base" : ""}>
-              地点记忆
-            </span>
+            <span className="font-editorial text-base">地点记忆</span>
           </button>
         )}
         <div className="ml-auto flex items-center gap-2">
           <Link
-            to="/schemes"
-            className="hidden sm:inline text-xs text-muted-foreground hover:text-foreground"
-          >
-            方案 {schemeId.toUpperCase()} · {scheme} ↗
-          </Link>
-          <Link
             to="/upload"
             search={{ from: "global" }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-accent-solid px-3 text-sm"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-accent px-3 text-sm text-accent-foreground"
           >
             <Plus size={15} />
             <span>记录这一刻</span>
@@ -110,45 +93,26 @@ function TopBar({
   );
 }
 
-/* ---------- 1. Map discovery ---------- */
-function MapScreen({
-  schemeId,
-  onOpen,
-}: {
-  schemeId: SchemeId;
-  onOpen: (p: Place) => void;
-}) {
+/* ---------- 地图发现 ---------- */
+function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
   const [hover, setHover] = useState<string | null>(null);
-  const bMap = schemeId === "b";
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <h1
-            className={
-              schemeId === "a"
-                ? "font-editorial text-2xl sm:text-3xl"
-                : "text-xl sm:text-2xl font-medium"
-            }
-          >
-            最近的记忆
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            6 个地点 · 8 段记录 · 更新于今天
-          </p>
+          <h1 className="font-editorial text-2xl sm:text-3xl">最近的记忆</h1>
+          <p className="mt-1 text-sm text-muted-foreground">6 个地点 · 8 段记录 · 更新于今天</p>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        {/* Map */}
+        {/* 地图 */}
         <div
-          className={`relative overflow-hidden rounded-[8px] border border-border ${
-            bMap ? "bg-surface-2" : "bg-surface-2"
-          }`}
+          className="relative overflow-hidden rounded-[8px] border border-border bg-surface-2"
           style={{ minHeight: 360 }}
         >
-          <FauxMap schemeId={schemeId} />
+          <FauxMap />
           {places.map((p) => (
             <button
               key={p.id}
@@ -173,14 +137,14 @@ function MapScreen({
               )}
             </button>
           ))}
-          {/* map footer */}
+          {/* 地图图例 */}
           <div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-1.5 rounded-[8px] bg-background/80 px-2 py-1 text-[11px] text-muted-foreground">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
             记忆点位（示意地图）
           </div>
         </div>
 
-        {/* List */}
+        {/* 地点列表 */}
         <div>
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-medium">地点记忆</h2>
@@ -210,9 +174,7 @@ function MapScreen({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm font-medium truncate">{p.name}</span>
-                        <span className="text-[11px] text-muted-foreground shrink-0">
-                          {p.city}
-                        </span>
+                        <span className="text-[11px] text-muted-foreground shrink-0">{p.city}</span>
                       </div>
                       <p className="mt-0.5 line-clamp-2 text-[13px] leading-5 text-muted-foreground">
                         {first.text}
@@ -239,99 +201,125 @@ function MapScreen({
   );
 }
 
-function FauxMap({ schemeId }: { schemeId: SchemeId }) {
-  const stroke =
-    schemeId === "b" ? "rgba(230,230,227,0.10)" : "rgba(0,0,0,0.08)";
-  const block =
-    schemeId === "b" ? "rgba(230,230,227,0.05)" : "rgba(0,0,0,0.04)";
-  const water =
-    schemeId === "b"
-      ? "rgba(111,154,106,0.10)"
-      : schemeId === "a"
-      ? "rgba(181,58,43,0.05)"
-      : "rgba(15,37,68,0.06)";
+function FauxMap() {
   return (
     <svg
       viewBox="0 0 400 260"
-      preserveAspectRatio="none"
+      preserveAspectRatio="xMidYMid slice"
       className="absolute inset-0 h-full w-full"
       aria-hidden
     >
-      <rect x="0" y="140" width="400" height="120" fill={water} />
+      {/* 陆地底色 */}
+      <rect width="400" height="260" fill="var(--surface-2)" />
+      {/* 不规则水面 — 用曲线而不是矩形 */}
+      <path
+        d="M 0 145 Q 60 125 120 138 Q 180 150 240 135 Q 300 120 360 140 Q 390 148 400 145 L 400 260 L 0 260 Z"
+        fill="rgba(100,140,160,0.10)"
+      />
+      {/* 岸线 */}
+      <path
+        d="M 0 145 Q 60 125 120 138 Q 180 150 240 135 Q 300 120 360 140 Q 390 148 400 145"
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth="0.8"
+        fill="none"
+      />
+      {/* 有机曲线道路 */}
+      <path
+        d="M 0 50 Q 80 55 160 42 Q 240 30 320 48 Q 380 58 400 52"
+        stroke="rgba(0,0,0,0.09)"
+        strokeWidth="0.7"
+        fill="none"
+      />
+      <path
+        d="M 0 95 Q 90 88 180 100 Q 270 112 360 95 Q 390 90 400 92"
+        stroke="rgba(0,0,0,0.09)"
+        strokeWidth="0.7"
+        fill="none"
+      />
+      <path
+        d="M 50 0 Q 55 40 48 80 Q 42 110 55 140"
+        stroke="rgba(0,0,0,0.07)"
+        strokeWidth="0.6"
+        fill="none"
+      />
+      <path
+        d="M 170 0 Q 165 45 175 90 Q 182 120 168 140"
+        stroke="rgba(0,0,0,0.07)"
+        strokeWidth="0.6"
+        fill="none"
+      />
+      <path
+        d="M 290 0 Q 298 42 285 85 Q 278 115 295 140"
+        stroke="rgba(0,0,0,0.07)"
+        strokeWidth="0.6"
+        fill="none"
+      />
+      {/* 建筑块 — 不规则小多边形代替矩形 */}
       {[
-        [20, 20, 80, 40],
-        [110, 30, 60, 50],
-        [180, 20, 70, 40],
-        [260, 30, 50, 30],
-        [320, 20, 60, 50],
-        [30, 90, 70, 30],
-        [110, 90, 90, 30],
-        [220, 90, 60, 30],
-        [290, 90, 90, 30],
-        [40, 180, 100, 40],
-        [160, 190, 80, 30],
-        [260, 180, 120, 50],
-      ].map(([x, y, w, h], i) => (
-        <rect key={i} x={x} y={y} width={w} height={h} fill={block} rx="2" />
+        "M 25 25 L 55 22 L 58 45 L 28 48 Z",
+        "M 80 30 L 105 28 L 108 52 L 82 55 Z",
+        "M 130 22 L 165 20 L 168 48 L 132 50 Z",
+        "M 200 28 L 228 25 L 230 50 L 202 52 Z",
+        "M 255 24 L 285 22 L 287 48 L 258 50 Z",
+        "M 315 30 L 350 28 L 352 55 L 318 57 Z",
+        "M 30 70 L 62 68 L 65 92 L 32 94 Z",
+        "M 100 75 L 140 72 L 143 98 L 103 100 Z",
+        "M 195 70 L 232 68 L 234 95 L 198 97 Z",
+        "M 270 75 L 308 73 L 310 98 L 273 100 Z",
+        "M 340 72 L 378 70 L 380 96 L 343 98 Z",
+        "M 20 165 L 58 162 L 60 195 L 23 197 Z",
+        "M 120 170 L 165 168 L 168 200 L 123 202 Z",
+        "M 220 175 L 268 172 L 270 208 L 223 210 Z",
+        "M 310 168 L 360 165 L 362 200 L 313 202 Z",
+      ].map((d, i) => (
+        <path key={i} d={d} fill="rgba(0,0,0,0.035)" />
       ))}
-      {Array.from({ length: 8 }).map((_, i) => (
-        <line
-          key={`h${i}`}
-          x1="0"
-          x2="400"
-          y1={i * 35 + 5}
-          y2={i * 35 + 5}
-          stroke={stroke}
-          strokeWidth="1"
-        />
-      ))}
-      {Array.from({ length: 10 }).map((_, i) => (
-        <line
-          key={`v${i}`}
-          y1="0"
-          y2="260"
-          x1={i * 45 + 10}
-          x2={i * 45 + 10}
-          stroke={stroke}
-          strokeWidth="1"
-        />
-      ))}
+      {/* 极淡的地名标注 */}
+      <text
+        x="90"
+        y="115"
+        fill="rgba(0,0,0,0.20)"
+        fontSize="7"
+        fontFamily="serif"
+        letterSpacing="2"
+      >
+        北山街
+      </text>
+      <text
+        x="200"
+        y="178"
+        fill="rgba(100,140,160,0.35)"
+        fontSize="8"
+        fontFamily="serif"
+        letterSpacing="3"
+      >
+        西 湖
+      </text>
     </svg>
   );
 }
 
-/* ---------- 2. Place detail ---------- */
+/* ---------- 地点详情 ---------- */
 function PlaceScreen({
-  schemeId,
   place,
   filter,
   setFilter,
 }: {
-  schemeId: SchemeId;
   place: Place;
   filter: "all" | string;
   setFilter: (f: "all" | string) => void;
 }) {
   const authors = place.entries;
-  const shown =
-    filter === "all" ? authors : authors.filter((e) => e.id === filter);
+  const shown = filter === "all" ? authors : authors.filter((e) => e.id === filter);
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 pb-28">
-      {/* Header */}
+      {/* 头部 */}
       <div className="mb-6">
         <p className="text-xs text-muted-foreground">
           <span className="text-accent">●</span> {place.city}
         </p>
-        <h1
-          className={
-            schemeId === "a"
-              ? "mt-1 font-editorial text-3xl sm:text-4xl"
-              : "mt-1 text-2xl sm:text-3xl font-medium"
-          }
-        >
-          {place.name}
-        </h1>
+        <h1 className="mt-1 font-editorial text-3xl sm:text-4xl">{place.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {authors.length} 位朋友在这里留下了 {authors.length} 段记忆
         </p>
@@ -345,30 +333,26 @@ function PlaceScreen({
         </Link>
       </div>
 
-      {/* Filter tabs */}
+      {/* 筛选标签 */}
       <div className="mb-5 flex flex-wrap gap-1.5 border-b border-border">
         <TabBtn active={filter === "all"} onClick={() => setFilter("all")}>
           全部 · {authors.length}
         </TabBtn>
         {authors.map((e) => (
-          <TabBtn
-            key={e.id}
-            active={filter === e.id}
-            onClick={() => setFilter(e.id)}
-          >
+          <TabBtn key={e.id} active={filter === e.id} onClick={() => setFilter(e.id)}>
             {e.author}的记录
           </TabBtn>
         ))}
       </div>
 
-      {/* Entries */}
+      {/* 记录 */}
       <div className="space-y-10">
         {shown.map((entry) => (
-          <EntryBlock key={entry.id} entry={entry} schemeId={schemeId} />
+          <EntryBlock key={entry.id} entry={entry} />
         ))}
       </div>
 
-      {/* Sticky bottom CTA */}
+      {/* 固定底部 CTA */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="min-w-0 text-xs text-muted-foreground truncate">
@@ -377,7 +361,7 @@ function PlaceScreen({
           <Link
             to="/upload"
             search={{ from: "place", placeId: place.id }}
-            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[8px] bg-accent-solid px-4 text-sm"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[8px] bg-accent px-4 text-sm text-accent-foreground"
           >
             <Plus size={15} />
             记录我在这里的时刻
@@ -411,94 +395,47 @@ function TabBtn({
   );
 }
 
-function EntryBlock({
-  entry,
-  schemeId,
-}: {
-  entry: MemoryEntry;
-  schemeId: SchemeId;
-}) {
+function EntryBlock({ entry }: { entry: MemoryEntry }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const bStyle = schemeId === "b";
 
   return (
     <article className="animate-fade-up">
       <header className="flex items-center gap-3">
-        <div
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-medium"
-          style={{
-            background: "var(--color-muted)",
-            color: "var(--color-foreground)",
-          }}
-        >
+        {/* 印章风格头像 */}
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[3px] bg-accent font-editorial text-sm text-accent-foreground">
           {entry.authorInitial}
         </div>
         <div className="min-w-0">
           <div className="text-sm font-medium">{entry.author}的记录</div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Calendar size={11} /> {entry.date}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Cloud size={11} /> {entry.weather} · {entry.temp}
-            </span>
+          <div className="text-xs text-muted-foreground">
+            {entry.date} · {entry.weather} · {entry.temp}
           </div>
         </div>
       </header>
 
-      <p
-        className={`mt-4 text-[15px] leading-8 ${
-          schemeId === "a" ? "font-editorial text-[17px] leading-9" : ""
-        }`}
-      >
-        {entry.text}
-      </p>
+      <p className="mt-4 font-editorial text-[17px] leading-9 text-indent">{entry.text}</p>
 
-      <div
-        className={`mt-4 grid gap-2 ${
-          bStyle
-            ? "grid-cols-2 sm:grid-cols-3"
-            : entry.photos.length >= 5
-            ? "grid-cols-2 sm:grid-cols-3"
-            : "grid-cols-2 sm:grid-cols-3"
-        }`}
-      >
-        {entry.photos.map((src, i) => (
+      <div className="journal-photos mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {entry.photos.map((src) => (
           <button
             key={src}
             onClick={() => setExpanded(src)}
-            className={`overflow-hidden rounded-[8px] border border-border bg-muted ${
-              i === 0 && bStyle ? "col-span-2 row-span-2 aspect-square" : "aspect-[4/3]"
-            }`}
+            className="journal-photo overflow-hidden bg-white p-1.5 shadow-sm aspect-4/3"
           >
-            <img
-              src={src}
-              alt=""
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform hover:scale-[1.02]"
-            />
+            <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
           </button>
         ))}
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-        <button className="inline-flex items-center gap-1 hover:text-foreground">
-          <Heart size={13} /> 12
-        </button>
-        <button className="inline-flex items-center gap-1 hover:text-foreground">
-          <MessageCircle size={13} /> 3
-        </button>
-      </div>
-
       {expanded && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 animate-fade-up"
+          className="fixed inset-0 z-50 grid place-items-center bg-foreground/80 p-4 animate-fade-up"
           onClick={() => setExpanded(null)}
         >
           <img
             src={expanded}
             alt=""
-            className="max-h-[85vh] max-w-[95vw] rounded-[8px] object-contain"
+            className="max-h-[85vh] max-w-[95vw] rounded-[4px] bg-white p-2 shadow-lg object-contain"
           />
           <button
             className="absolute right-4 top-4 rounded-[8px] bg-white/10 p-2 text-white"

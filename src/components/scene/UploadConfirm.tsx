@@ -33,19 +33,41 @@ const ENTRY_LABEL: Record<EntrySource, string> = {
   scene: "从「石桥旁向东北看」进入",
 };
 
-export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
+export function UploadConfirm({
+  from = "global",
+  placeId,
+  sceneId,
+}: {
+  from?: EntrySource;
+  placeId?: string;
+  sceneId?: string;
+}) {
   const [exif, setExif] = useState<ExifState>("success");
   const [sceneChoice, setSceneChoice] = useState<SceneChoice>(
-    from === "scene" ? "existing" : "existing"
+    from === "scene" ? "existing" : "existing",
   );
   const [visibility, setVisibility] = useState<Visibility>("participants");
   const [note, setNote] = useState(
-    "沿着你去年秋天走的那条路又走了一遍，樱花刚开，湖面比照片里亮很多。"
+    "沿着你去年秋天走的那条路又走了一遍，樱花刚开，湖面比照片里亮很多。",
   );
   const [publish, setPublish] = useState<Publish>("idle");
+  const [photoUrl, setPhotoUrl] = useState<string>(uploadPhotoUrl);
 
   const [manualDate, setManualDate] = useState<"exact" | "year" | "unknown">("exact");
   const [manualLocation, setManualLocation] = useState<"current" | "map" | null>(null);
+
+  // 根据来源决定返回目标
+  const backTarget = from === "scene" ? "/scene" : from === "place" && placeId ? "/" : "/";
+  const backSearch =
+    from === "place" && placeId ? { place: placeId } : from === "global" ? {} : undefined;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPhotoUrl(url);
+    }
+  };
 
   const doPublish = () => {
     setPublish("publishing");
@@ -56,12 +78,13 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
   const sceneLocked = from === "scene";
 
   return (
-    <div className="scheme-a min-h-[100dvh] bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto w-full max-w-[560px] pb-32">
         {/* Header */}
         <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b border-border bg-background/90 backdrop-blur px-3">
           <Link
-            to="/"
+            to={backTarget}
+            search={backSearch}
             aria-label="返回"
             className="grid h-9 w-9 place-items-center rounded-[8px] text-muted-foreground hover:text-foreground"
           >
@@ -115,26 +138,31 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
         {/* SECTION 1: 照片与文字 */}
         <SectionHeader index="01" title="照片与文字" />
         <section className="px-4">
-          <div
-            className="overflow-hidden rounded-[8px] border border-border bg-muted"
-            style={{ aspectRatio: "4 / 3" }}
-          >
-            <img
-              src={uploadPhotoUrl}
-              alt="待上传的照片"
-              width={1024}
-              height={768}
-              className="h-full w-full object-cover"
-            />
-          </div>
+          <label className="block cursor-pointer">
+            <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+            <div
+              className="overflow-hidden rounded-[8px] border border-border bg-muted"
+              style={{ aspectRatio: "4 / 3" }}
+            >
+              <img
+                src={photoUrl}
+                alt="待上传的照片"
+                width={1024}
+                height={768}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </label>
           <div className="mt-2 flex items-center gap-2 text-[12px] text-muted-foreground">
             <Camera size={12} />
-            <span>示例照片 · 点击可重新选择</span>
+            <span>
+              {photoUrl === uploadPhotoUrl
+                ? "示例照片 · 点击可重新选择"
+                : "已选择照片 · 点击可更换"}
+            </span>
           </div>
 
-          <label className="mt-3 mb-1.5 block text-[13px] font-medium">
-            一段文字
-          </label>
+          <label className="mt-3 mb-1.5 block text-[13px] font-medium">一段文字</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -170,12 +198,7 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
                 editable
                 confirmed
               />
-              <InfoRow
-                icon={<Locate size={14} />}
-                label="GPS"
-                value="精确到约 12 米"
-                confirmed
-              />
+              <InfoRow icon={<Locate size={14} />} label="GPS" value="精确到约 12 米" confirmed />
               <li className="flex items-center gap-2 px-3 py-2.5 text-[11px] text-muted-foreground">
                 <Info size={12} />
                 <span>信息来源：照片 EXIF 和历史天气</span>
@@ -259,9 +282,7 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
             <div className="flex items-start gap-2">
               <Compass size={14} className="mt-0.5 text-accent" />
               <div className="min-w-0">
-                <div className="text-[13px] font-medium">
-                  系统推荐：加入「{scene.title}」视角
-                </div>
+                <div className="text-[13px] font-medium">系统推荐：加入「{scene.title}」视角</div>
                 <div className="mt-0.5 text-[11px] text-muted-foreground">
                   {exif === "success"
                     ? "高度匹配 · 拍摄点和方向与已有视角接近"
@@ -292,9 +313,7 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
                   disabled={sceneLocked}
                 />
                 <div className="min-w-0">
-                  <div className="text-[13px] font-medium">
-                    加入「{scene.title}」时间轴
-                  </div>
+                  <div className="text-[13px] font-medium">加入「{scene.title}」时间轴</div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
                     已有 3 个时刻 · 会作为新时刻加入
                   </div>
@@ -367,7 +386,7 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
           <button
             onClick={doPublish}
             disabled={publish === "publishing"}
-            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-accent text-[var(--accent-foreground)] text-sm disabled:opacity-70"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-accent text-accent-foreground text-sm disabled:opacity-70"
           >
             {publish === "publishing" ? "发布中…" : "发布这段记录"}
           </button>
@@ -420,10 +439,11 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
                 查看视角时间轴
               </Link>
               <Link
-                to="/"
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[8px] bg-accent text-[var(--accent-foreground)] text-sm"
+                to={backTarget}
+                search={backSearch}
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-[8px] bg-accent text-accent-foreground text-sm"
               >
-                返回地图
+                {from === "scene" ? "返回场景" : from === "place" ? "返回地点" : "返回地图"}
               </Link>
             </div>
           </div>
@@ -433,15 +453,7 @@ export function UploadConfirm({ from = "global" }: { from?: EntrySource }) {
   );
 }
 
-function SectionHeader({
-  index,
-  title,
-  hint,
-}: {
-  index: string;
-  title: string;
-  hint?: string;
-}) {
+function SectionHeader({ index, title, hint }: { index: string; title: string; hint?: string }) {
   return (
     <div className="mt-6 flex items-baseline gap-2 px-4">
       <span className="font-editorial text-[13px] text-accent">{index}</span>
@@ -452,15 +464,7 @@ function SectionHeader({
   );
 }
 
-function DestRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function DestRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <li className="flex items-center gap-2 px-3 py-2.5">
       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-muted text-muted-foreground">

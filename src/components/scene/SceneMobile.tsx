@@ -19,9 +19,9 @@ export function SceneMobile() {
   };
 
   return (
-    <div className="scheme-a min-h-[100dvh] bg-background text-foreground flex flex-col">
+    <div className="min-h-dvh bg-background text-foreground flex flex-col">
       {/* Frame emulating a phone */}
-      <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-105 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b border-border bg-background/90 backdrop-blur px-3">
           <Link
             to="/"
@@ -44,12 +44,8 @@ export function SceneMobile() {
             <p className="text-[11px] text-muted-foreground">
               <span className="text-accent">●</span> {place.name}
             </p>
-            <h2 className="mt-1 font-editorial text-[22px] leading-snug">
-              {scene.title}
-            </h2>
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              3 个时刻 · {scene.direction}
-            </p>
+            <h2 className="mt-1 font-editorial text-[22px] leading-snug">{scene.title}</h2>
+            <p className="mt-1 text-[12px] text-muted-foreground">3 个时刻 · {scene.direction}</p>
           </div>
 
           <div className="mt-3 px-4">
@@ -84,9 +80,7 @@ export function SceneMobile() {
                       onClick={() => pick(m.id)}
                       aria-pressed={selected}
                       className={`block w-full overflow-hidden rounded-[8px] border ${
-                        selected
-                          ? "border-accent ring-1 ring-accent"
-                          : "border-border"
+                        selected ? "border-accent ring-1 ring-accent" : "border-border"
                       }`}
                     >
                       <div className="aspect-square bg-muted">
@@ -113,11 +107,11 @@ export function SceneMobile() {
           className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 backdrop-blur"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}
         >
-          <div className="mx-auto flex w-full max-w-[420px] items-center gap-2 px-4 pt-3">
+          <div className="mx-auto flex w-full max-w-105 items-center gap-2 px-4 pt-3">
             <Link
               to="/upload"
               search={{ from: "scene", sceneId: "shiqiao-ne" }}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-accent text-[var(--accent-foreground)] text-sm"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-accent text-accent-foreground text-sm"
             >
               <Plus size={16} />
               添加这个视角的新时刻

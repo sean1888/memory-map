@@ -96,11 +96,7 @@ export function CompareSlider({
       </span>
 
       {/* Divider + handle */}
-      <div
-        className="absolute inset-y-0"
-        style={{ left: `calc(${pos}% - 1px)` }}
-        aria-hidden
-      >
+      <div className="absolute inset-y-0" style={{ left: `calc(${pos}% - 1px)` }} aria-hidden>
         <div className="h-full w-[2px] bg-accent/90" />
       </div>
       <button

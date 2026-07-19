@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-"地点记忆地图"（在场）— 一个原型应用。用户在某个地点留下文字 + 照片作为记忆，朋友来到同一地点后可看到之前的记录并续写自己的版本。实现了三套可切换的视觉方案（A / B / C）。
+"地点记忆地图"（在场）— 一个原型应用。用户在某个地点留下文字 + 照片作为记忆，朋友来到同一地点后可看到之前的记录并续写自己的版本。视觉风格为「城市观察手记」：暖白 / 深墨 / 朱红 / 衬线标题。
 
 项目已连接到 [Lovable](https://lovable.dev)。**禁止改写已推送的 git 历史**（不要 force push、不要 rebase/amend/squash 已推送的 commit）— 会破坏 Lovable 侧的历史记录。推送到已连接分支的 commit 会自动同步回 Lovable 编辑器。
 
@@ -39,14 +39,9 @@ bun run format     # Prettier 格式化
 - `src/start.ts` — `createStart()` 实例，带服务端错误中间件。
 - `src/router.tsx` — `createRouter()` 工厂函数，把 `QueryClient` 注入到路由 context。
 
-### 三套视觉主题
+### 视觉主题：城市观察手记
 
-定义在 `src/lib/schemes.ts` 和 `src/styles.css`：
-- **方案 A**（城市观察手记）：暖白 / 深墨 / 朱红。标题使用衬线字体 `.font-editorial`。
-- **方案 B**（影像地图）：深灰 / 银白 / 松绿。沉浸式。
-- **方案 C**（轻社交地图）：浅灰 / 深蓝 / 珊瑚红。移动端社交感。
-
-每个方案是一个 CSS 类（`.scheme-a` / `.scheme-b` / `.scheme-c`），设置一组 CSS 自定义属性。组件通过 `schemeId` prop 接收并据此分支样式。
+定义在 `src/styles.css` 的 `:root` 中：暖白 / 深墨 / 朱红。标题使用衬线字体 `.font-editorial`。
 
 ### 路径别名
 
@@ -54,7 +49,7 @@ bun run format     # Prettier 格式化
 
 ### 关键模块
 
-- `src/components/PrototypeApp.tsx` — 主应用：地图屏 + 地点详情屏。`/` 和 `/scheme/$id` 的入口。
+- `src/components/PrototypeApp.tsx` — 主应用：地图屏 + 地点详情屏。`/` 的入口。
 - `src/components/scene/` — 场景相关组件：`SceneDesktop`、`SceneMobile`、`CompareSlider`（对比滑块）、`UploadConfirm`。
 - `src/lib/sceneData.ts` — 领域类型（`Place`、`Scene`、`Moment`、`Visibility`、`Season`）及"同视角不同时刻"功能的 mock 数据。
 - `src/lib/mockData.ts` — 主原型的 `Place[]` 和 `MemoryEntry[]` mock 数据。

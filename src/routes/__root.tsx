@@ -86,14 +86,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "地点记忆地图 — 设计方案预览" },
       {
         property: "og:description",
-        content: "在地图上留下地点、时间和感受，朋友可以在同一个地点续写自己的记忆。三套视觉方向的可点击原型。",
+        content:
+          "在地图上留下地点、时间和感受，朋友可以在同一个地点续写自己的记忆。三套视觉方向的可点击原型。",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "地点记忆地图 — 设计方案预览" },
-      { name: "twitter:description", content: "在地图上留下地点、时间和感受，朋友可以在同一个地点续写自己的记忆。三套视觉方向的可点击原型。" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a83dc5c4-5c4c-4d23-a94a-ecdf8b9793d6/id-preview-68d80fb2--0df79cc7-6e93-4420-a571-f81220a63ee5.lovable.app-1784201374242.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a83dc5c4-5c4c-4d23-a94a-ecdf8b9793d6/id-preview-68d80fb2--0df79cc7-6e93-4420-a571-f81220a63ee5.lovable.app-1784201374242.png" },
+      {
+        name: "twitter:description",
+        content:
+          "在地图上留下地点、时间和感受，朋友可以在同一个地点续写自己的记忆。三套视觉方向的可点击原型。",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a83dc5c4-5c4c-4d23-a94a-ecdf8b9793d6/id-preview-68d80fb2--0df79cc7-6e93-4420-a571-f81220a63ee5.lovable.app-1784201374242.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a83dc5c4-5c4c-4d23-a94a-ecdf8b9793d6/id-preview-68d80fb2--0df79cc7-6e93-4420-a571-f81220a63ee5.lovable.app-1784201374242.png",
+      },
     ],
     links: [
       {

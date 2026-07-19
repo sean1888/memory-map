@@ -25,5 +25,5 @@ export const Route = createFileRoute("/upload")({
 
 function UploadPage() {
   const search = Route.useSearch();
-  return <UploadConfirm from={search.from} />;
+  return <UploadConfirm from={search.from} placeId={search.placeId} sceneId={search.sceneId} />;
 }

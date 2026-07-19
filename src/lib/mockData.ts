@@ -19,8 +19,7 @@ export type Place = {
 };
 
 // Real photography from picsum with fixed seeds for reliable, thematic-feeling images
-const p = (seed: string, w = 1200, h = 800) =>
-  `https://picsum.photos/seed/${seed}/${w}/${h}`;
+const p = (seed: string, w = 1200, h = 800) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
 
 export const places: Place[] = [
   {

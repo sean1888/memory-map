@@ -10,9 +10,8 @@
   --radius-lg: 8px;
   --radius-xl: 10px;
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Source Han Sans SC", "Noto Sans SC", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-serif: "Songti SC", "SimSun", "Source Han Serif SC", "Noto Serif SC", Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -26,19 +25,6 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --muted: #f2f2f2;
-  --muted-foreground: #6b6b6b;
-  --border: #e6e6e6;
-  --accent: #b53a2b;
-  --accent-foreground: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f6f4ef;
-}
-
-/* Scheme A — 城市观察手记：冷白 / 深墨 / 朱红 */
-.scheme-a {
   --background: #f6f4ef;
   --foreground: #1a1a1a;
   --muted: #ebe8e1;
@@ -50,35 +36,12 @@
   --surface-2: #efece4;
 }
 
-/* Scheme B — 影像地图：深灰 / 银白 / 松绿  (dark) */
-.scheme-b {
-  --background: #1c1e1d;
-  --foreground: #e6e6e3;
-  --muted: #2a2c2b;
-  --muted-foreground: #9a9c99;
-  --border: #333634;
-  --accent: #6f9a6a;
-  --accent-foreground: #0f110f;
-  --surface: #232524;
-  --surface-2: #171918;
-}
-
-/* Scheme C — 轻社交地图：浅灰 / 深蓝 / 珊瑚红 */
-.scheme-c {
-  --background: #f3f4f6;
-  --foreground: #0f2544;
-  --muted: #e7e9ee;
-  --muted-foreground: #64748b;
-  --border: #d9dde4;
-  --accent: #ff6a5b;
-  --accent-foreground: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #eef0f4;
-}
-
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -95,15 +58,47 @@
   color: var(--color-accent-foreground);
 }
 
-/* Serif accent only in Scheme A for editorial headlines */
-.scheme-a .font-editorial {
+/* 衬线字体，用于手记风格的标题 */
+.font-editorial {
   font-family: var(--font-serif);
   letter-spacing: 0.01em;
 }
 
 /* subtle fade for panel/photo transitions */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.animate-fade-up { animation: fade-up 220ms ease-out both; }
+.animate-fade-up {
+  animation: fade-up 220ms ease-out both;
+}
+
+/* 首行缩进，中文排版惯例 */
+.text-indent {
+  text-indent: 2em;
+}
+
+/* 手记贴照风格：白色衬底 + 轻微旋转 */
+.journal-photo {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+.journal-photos .journal-photo:nth-child(4n + 1) {
+  transform: rotate(-0.6deg);
+}
+.journal-photos .journal-photo:nth-child(4n + 3) {
+  transform: rotate(0.5deg);
+}
+.journal-photos .journal-photo:hover {
+  transform: rotate(0) scale(1.02);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+}

@@ -10,20 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
-import { Route as SchemesRouteImport } from './routes/schemes'
 import { Route as SceneRouteImport } from './routes/scene'
 import { Route as MRouteImport } from './routes/m'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SchemeIdRouteImport } from './routes/scheme.$id'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SchemesRoute = SchemesRouteImport.update({
-  id: '/schemes',
-  path: '/schemes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SceneRoute = SceneRouteImport.update({
@@ -41,59 +34,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SchemeIdRoute = SchemeIdRouteImport.update({
-  id: '/scheme/$id',
-  path: '/scheme/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/m': typeof MRoute
   '/scene': typeof SceneRoute
-  '/schemes': typeof SchemesRoute
   '/upload': typeof UploadRoute
-  '/scheme/$id': typeof SchemeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/m': typeof MRoute
   '/scene': typeof SceneRoute
-  '/schemes': typeof SchemesRoute
   '/upload': typeof UploadRoute
-  '/scheme/$id': typeof SchemeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/m': typeof MRoute
   '/scene': typeof SceneRoute
-  '/schemes': typeof SchemesRoute
   '/upload': typeof UploadRoute
-  '/scheme/$id': typeof SchemeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/m' | '/scene' | '/schemes' | '/upload' | '/scheme/$id'
+  fullPaths: '/' | '/m' | '/scene' | '/upload'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/m' | '/scene' | '/schemes' | '/upload' | '/scheme/$id'
-  id:
-    | '__root__'
-    | '/'
-    | '/m'
-    | '/scene'
-    | '/schemes'
-    | '/upload'
-    | '/scheme/$id'
+  to: '/' | '/m' | '/scene' | '/upload'
+  id: '__root__' | '/' | '/m' | '/scene' | '/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MRoute: typeof MRoute
   SceneRoute: typeof SceneRoute
-  SchemesRoute: typeof SchemesRoute
   UploadRoute: typeof UploadRoute
-  SchemeIdRoute: typeof SchemeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -103,13 +76,6 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/schemes': {
-      id: '/schemes'
-      path: '/schemes'
-      fullPath: '/schemes'
-      preLoaderRoute: typeof SchemesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scene': {
@@ -133,13 +99,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/scheme/$id': {
-      id: '/scheme/$id'
-      path: '/scheme/$id'
-      fullPath: '/scheme/$id'
-      preLoaderRoute: typeof SchemeIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -147,9 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MRoute: MRoute,
   SceneRoute: SceneRoute,
-  SchemesRoute: SchemesRoute,
   UploadRoute: UploadRoute,
-  SchemeIdRoute: SchemeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
