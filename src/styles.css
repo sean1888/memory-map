@@ -1,0 +1,109 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-serif: "Songti SC", "SimSun", "Source Han Serif SC", "Noto Serif SC", Georgia, serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --muted: #f2f2f2;
+  --muted-foreground: #6b6b6b;
+  --border: #e6e6e6;
+  --accent: #b53a2b;
+  --accent-foreground: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f4ef;
+}
+
+/* Scheme A — 城市观察手记：冷白 / 深墨 / 朱红 */
+.scheme-a {
+  --background: #f6f4ef;
+  --foreground: #1a1a1a;
+  --muted: #ebe8e1;
+  --muted-foreground: #6d6a63;
+  --border: #d9d5cc;
+  --accent: #b53a2b;
+  --accent-foreground: #f6f4ef;
+  --surface: #fbfaf6;
+  --surface-2: #efece4;
+}
+
+/* Scheme B — 影像地图：深灰 / 银白 / 松绿  (dark) */
+.scheme-b {
+  --background: #1c1e1d;
+  --foreground: #e6e6e3;
+  --muted: #2a2c2b;
+  --muted-foreground: #9a9c99;
+  --border: #333634;
+  --accent: #6f9a6a;
+  --accent-foreground: #0f110f;
+  --surface: #232524;
+  --surface-2: #171918;
+}
+
+/* Scheme C — 轻社交地图：浅灰 / 深蓝 / 珊瑚红 */
+.scheme-c {
+  --background: #f3f4f6;
+  --foreground: #0f2544;
+  --muted: #e7e9ee;
+  --muted-foreground: #64748b;
+  --border: #d9dde4;
+  --accent: #ff6a5b;
+  --accent-foreground: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@utility text-accent {
+  color: var(--color-accent);
+}
+@utility bg-accent-solid {
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+
+/* Serif accent only in Scheme A for editorial headlines */
+.scheme-a .font-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: 0.01em;
+}
+
+/* subtle fade for panel/photo transitions */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 220ms ease-out both; }
