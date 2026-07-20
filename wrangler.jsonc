@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "memory-map-db",
-      "database_id": "PLACEHOLDER_REPLACE_AFTER_WRANGLER_D1_CREATE",
+      "database_id": "e5275733-5447-46ba-b513-3d966769f58f",
       "migrations_dir": "db/migrations",
     },
   ],
