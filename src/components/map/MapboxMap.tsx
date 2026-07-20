@@ -166,7 +166,7 @@ export default function MapboxMap({ places, onPlaceClick, onMapDblClick, selecte
       {/* 地图底部提示 */}
       <div className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1.5 rounded-[8px] bg-background/85 px-2 py-1 text-[11px] text-muted-foreground">
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-         双击地图可打卡
+        双击地图可打卡
       </div>
     </div>
   );
