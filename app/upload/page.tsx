@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { UploadConfirm } from "@/components/scene/UploadConfirm";
+import { BOOKMARK_COOKIE } from "@/lib/auth";
+import { getUploadContext } from "@/lib/repository";
 
 export const metadata: Metadata = {
   title: "记录这一刻 · 在场",
@@ -14,5 +17,7 @@ export default async function Page({
 }) {
   const { from, placeId, sceneId } = await searchParams;
   const validFrom = from === "place" || from === "scene" ? from : "global";
-  return <UploadConfirm from={validFrom} placeId={placeId} sceneId={sceneId} />;
+  const cookieStore = await cookies();
+  const context = await getUploadContext(cookieStore.get(BOOKMARK_COOKIE)?.value);
+  return <UploadConfirm context={context} from={validFrom} placeId={placeId} sceneId={sceneId} />;
 }

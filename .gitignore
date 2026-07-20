@@ -21,6 +21,7 @@ dist-ssr
 .next-cache
 .open-next
 out
+tsconfig.tsbuildinfo
 
 # Wrangler / Cloudflare
 .wrangler/

@@ -1,6 +1,8 @@
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "memory-map",
-  "compatibility_date": "2025-01-01",
+  "compatibility_date": "2026-07-20",
+  "compatibility_flags": ["nodejs_compat"],
   "main": ".open-next/worker.js",
   "assets": {
     "directory": ".open-next/assets",
@@ -11,6 +13,13 @@
       "binding": "DB",
       "database_name": "memory-map-db",
       "database_id": "PLACEHOLDER_REPLACE_AFTER_WRANGLER_D1_CREATE",
+      "migrations_dir": "db/migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "memory-map-images",
     },
   ],
 }

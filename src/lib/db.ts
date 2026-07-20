@@ -1,30 +1,57 @@
-// D1 数据库类型定义
+export type Visibility = "self" | "participants" | "link" | "public";
+export type MemorySource = "exif" | "manual" | "location";
 
-export interface PlaceRow {
+export type MemoryDTO = {
+  id: string;
+  placeId: string;
+  sceneId: string | null;
+  author: string;
+  authorInitial: string;
+  text: string;
+  capturedAt: string | null;
+  createdAt: string;
+  date: string;
+  weather: string | null;
+  temperature: number | null;
+  temp: string;
+  latitude: number;
+  longitude: number;
+  visibility: Visibility;
+  source: MemorySource;
+  gpsAccuracy: number | null;
+  photos: string[];
+  canDelete: boolean;
+};
+
+export type PlaceDTO = {
   id: string;
   name: string;
   city: string;
+  address: string | null;
   latitude: number;
   longitude: number;
-  created_at: string;
-}
+  memoryCount: number;
+  entries: MemoryDTO[];
+};
 
-export interface MemoryRow {
+export type SceneDTO = {
   id: string;
-  place_id: string;
-  author: string;
-  author_initial: string;
-  content: string;
-  photo_url: string | null;
+  placeId: string;
+  title: string;
   latitude: number;
   longitude: number;
-  captured_at: string;
-  weather: string | null;
-  temperature: string | null;
-  created_at: string;
-}
+  directionDegrees: number | null;
+  direction: string;
+  momentCount: number;
+};
 
-export interface PlaceWithMemories extends PlaceRow {
-  memories: MemoryRow[];
-  memory_count: number;
-}
+export type SceneDataDTO = {
+  place: PlaceDTO;
+  scenes: SceneDTO[];
+  moments: MemoryDTO[];
+};
+
+export type UploadContextDTO = {
+  places: Array<Pick<PlaceDTO, "id" | "name" | "city" | "latitude" | "longitude">>;
+  scenes: SceneDTO[];
+};

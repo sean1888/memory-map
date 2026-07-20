@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, ArrowLeft, Users, X } from "lucide-react";
-import { places, type Place, type MemoryEntry } from "@/lib/mockData";
+import { MapPin, Plus, ArrowLeft, Users, X, Trash2 } from "lucide-react";
+import type { MemoryDTO, PlaceDTO } from "@/lib/db";
 import CheckInForm from "@/components/CheckInForm";
 
 // SSR 安全导入 Mapbox 地图组件
@@ -26,9 +26,11 @@ const MapboxMap = dynamic(() => import("@/components/map/MapboxMap"), {
 type Screen = "map" | "place";
 
 export function PrototypeApp({
+  places,
   initialPlaceId,
   initialFilter,
 }: {
+  places: PlaceDTO[];
   initialPlaceId?: string;
   initialFilter?: string;
 }) {
@@ -44,7 +46,7 @@ export function PrototypeApp({
     setFilter("all");
   }, [initialPlaceId]);
 
-  const openPlace = (p: Place) => {
+  const openPlace = (p: PlaceDTO) => {
     router.push(`/?place=${p.id}`);
   };
 
@@ -65,9 +67,14 @@ export function PrototypeApp({
     <div className="min-h-screen bg-background text-foreground">
       <TopBar screen={screen} onHome={goHome} onBack={goHome} />
 
-      {screen === "map" && <MapScreen onOpen={openPlace} />}
+      {screen === "map" && <MapScreen places={places} onOpen={openPlace} />}
       {screen === "place" && activePlace && (
-        <PlaceScreen place={activePlace} filter={filter} setFilter={updateFilter} />
+        <PlaceScreen
+          place={activePlace}
+          filter={filter}
+          setFilter={updateFilter}
+          onDeleted={() => router.refresh()}
+        />
       )}
     </div>
   );
@@ -114,7 +121,8 @@ function TopBar({
 }
 
 /* ---------- 地图发现 ---------- */
-function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
+function MapScreen({ places, onOpen }: { places: PlaceDTO[]; onOpen: (p: PlaceDTO) => void }) {
+  const router = useRouter();
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [checkInCoords, setCheckInCoords] = useState<{ lng: number; lat: number } | null>(null);
   const [checkInPlaceId, setCheckInPlaceId] = useState<string | undefined>();
@@ -126,12 +134,12 @@ function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
     city: p.city,
     latitude: p.latitude,
     longitude: p.longitude,
-    memoryCount: p.entries.length,
+    memoryCount: p.memoryCount,
   }));
 
   const handleMapDblClick = (lng: number, lat: number) => {
     // 找到最近的已知地点
-    let nearest: Place | null = null;
+    let nearest: PlaceDTO | null = null;
     let minDist = Infinity;
     for (const p of places) {
       const dist = Math.sqrt((p.latitude - lat) ** 2 + (p.longitude - lng) ** 2);
@@ -146,6 +154,7 @@ function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
 
   const handleCheckInSuccess = () => {
     setCheckInCoords(null);
+    router.refresh();
   };
 
   return (
@@ -153,7 +162,10 @@ function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
           <h1 className="font-editorial text-2xl sm:text-3xl">最近的记忆</h1>
-          <p className="mt-1 text-sm text-muted-foreground">6 个地点 · 8 段记录 · 更新于今天</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {places.length} 个地点 · {places.reduce((sum, place) => sum + place.memoryCount, 0)}{" "}
+            段记录
+          </p>
         </div>
       </div>
 
@@ -183,6 +195,7 @@ function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
           <ul className="space-y-2">
             {places.map((p) => {
               const first = p.entries[0];
+              if (!first) return null;
               return (
                 <li key={p.id}>
                   <button
@@ -210,9 +223,9 @@ function MapScreen({ onOpen }: { onOpen: (p: Place) => void }) {
                         <span>{first.author}</span>
                         <span>·</span>
                         <span>{first.date}</span>
-                        {p.entries.length > 1 && (
+                        {p.memoryCount > 1 && (
                           <span className="ml-auto inline-flex items-center gap-1 text-accent">
-                            <Users size={11} /> {p.entries.length} 段记忆
+                            <Users size={11} /> {p.memoryCount} 段记忆
                           </span>
                         )}
                       </div>
@@ -244,10 +257,12 @@ function PlaceScreen({
   place,
   filter,
   setFilter,
+  onDeleted,
 }: {
-  place: Place;
+  place: PlaceDTO;
   filter: "all" | string;
   setFilter: (f: "all" | string) => void;
+  onDeleted: () => void;
 }) {
   const authors = place.entries;
   const shown = filter === "all" ? authors : authors.filter((e) => e.id === filter);
@@ -283,7 +298,7 @@ function PlaceScreen({
       {/* 记录 */}
       <div className="space-y-10">
         {shown.map((entry) => (
-          <EntryBlock key={entry.id} entry={entry} />
+          <EntryBlock key={entry.id} entry={entry} onDeleted={onDeleted} />
         ))}
       </div>
 
@@ -329,8 +344,17 @@ function TabBtn({
   );
 }
 
-function EntryBlock({ entry }: { entry: MemoryEntry }) {
+function EntryBlock({ entry, onDeleted }: { entry: MemoryDTO; onDeleted: () => void }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const deleteEntry = async () => {
+    if (!window.confirm("确定删除这段记录和已上传的图片吗？")) return;
+    setDeleting(true);
+    const response = await fetch(`/api/memories/${entry.id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (response.ok) onDeleted();
+  };
 
   return (
     <article className="animate-fade-up">
@@ -342,24 +366,37 @@ function EntryBlock({ entry }: { entry: MemoryEntry }) {
         <div className="min-w-0">
           <div className="text-sm font-medium">{entry.author}的记录</div>
           <div className="text-xs text-muted-foreground">
-            {entry.date} · {entry.weather} · {entry.temp}
+            {[entry.date, entry.weather, entry.temp].filter(Boolean).join(" · ")}
           </div>
         </div>
+        {entry.canDelete && (
+          <button
+            type="button"
+            onClick={deleteEntry}
+            disabled={deleting}
+            className="ml-auto grid h-8 w-8 place-items-center rounded-[8px] text-muted-foreground hover:text-accent disabled:opacity-50"
+            aria-label="删除记录"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
       </header>
 
       <p className="mt-4 font-editorial text-[17px] leading-9 text-indent">{entry.text}</p>
 
-      <div className="journal-photos mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {entry.photos.map((src) => (
-          <button
-            key={src}
-            onClick={() => setExpanded(src)}
-            className="journal-photo overflow-hidden bg-white p-1.5 shadow-sm aspect-4/3"
-          >
-            <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-          </button>
-        ))}
-      </div>
+      {entry.photos.length > 0 && (
+        <div className="journal-photos mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {entry.photos.map((src) => (
+            <button
+              key={src}
+              onClick={() => setExpanded(src)}
+              className="journal-photo overflow-hidden bg-white p-1.5 shadow-sm aspect-4/3"
+            >
+              <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
 
       {expanded && (
         <div

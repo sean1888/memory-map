@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { X, MapPin, Pencil } from "lucide-react";
-import { createMemory } from "@/lib/server-actions";
 
 type Props = {
   latitude: number;
@@ -15,6 +14,8 @@ type Props = {
 export default function CheckInForm({ latitude, longitude, placeId, onClose, onSuccess }: Props) {
   const [content, setContent] = useState("");
   const [author, setAuthor] = useState("");
+  const [placeName, setPlaceName] = useState("");
+  const [city, setCity] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,19 +28,29 @@ export default function CheckInForm({ latitude, longitude, placeId, onClose, onS
       setError("请留下你的名字");
       return;
     }
+    if (!placeId && (!placeName.trim() || !city.trim())) {
+      setError("请填写新地点名称和城市");
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
     const formData = new FormData();
     formData.append("latitude", latitude.toString());
     formData.append("longitude", longitude.toString());
+    formData.append("clientRequestId", crypto.randomUUID());
     formData.append("placeId", placeId || "new");
+    if (!placeId) {
+      formData.append("placeName", placeName.trim());
+      formData.append("city", city.trim());
+    }
     formData.append("author", author.trim());
     formData.append("content", content.trim());
 
     try {
-      const result = await createMemory(formData);
-      if (result.success) {
+      const response = await fetch("/api/memories", { method: "POST", body: formData });
+      const result = (await response.json()) as { success?: boolean; error?: string };
+      if (response.ok && result.success) {
         onSuccess();
       } else {
         setError(result.error || "提交失败");
@@ -97,6 +108,29 @@ export default function CheckInForm({ latitude, longitude, placeId, onClose, onS
             maxLength={20}
           />
         </div>
+
+        {!placeId && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <label className="text-[13px] font-medium">
+              地点名称
+              <input
+                value={placeName}
+                onChange={(event) => setPlaceName(event.target.value)}
+                className="mt-1.5 w-full rounded-[8px] border border-border bg-surface px-3 py-2 text-[14px] outline-none focus:border-accent"
+                maxLength={80}
+              />
+            </label>
+            <label className="text-[13px] font-medium">
+              城市
+              <input
+                value={city}
+                onChange={(event) => setCity(event.target.value)}
+                className="mt-1.5 w-full rounded-[8px] border border-border bg-surface px-3 py-2 text-[14px] outline-none focus:border-accent"
+                maxLength={80}
+              />
+            </label>
+          </div>
+        )}
 
         {/* 内容 */}
         <div className="mt-3">

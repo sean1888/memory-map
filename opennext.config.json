@@ -1,6 +1,0 @@
-{
-  "$schema": "https://opennextjs.org/config.schema.json",
-  "cloudflare": {
-    "preset": "default"
-  }
-}
