@@ -16,6 +16,7 @@ type MemoryRow = {
   scene_id: string | null;
   actor_id: string;
   display_name: string;
+  avatar_r2_key: string | null;
   note: string;
   latitude: number;
   longitude: number;
@@ -64,7 +65,7 @@ async function loadMemories(
   if (options.limit) bindings.push(options.limit);
   const { results } = await db
     .prepare(
-      `SELECT m.*, a.display_name
+      `SELECT m.*, a.display_name, a.avatar_r2_key
        FROM memories m
        JOIN actors a ON a.id = m.actor_id
        WHERE m.${where} = ? AND m.deleted_at IS NULL
@@ -99,6 +100,7 @@ async function loadMemories(
     sceneId: memory.scene_id,
     author: memory.display_name,
     authorInitial: memory.display_name.slice(0, 1),
+    authorAvatarUrl: memory.avatar_r2_key ? `/api/avatars/${memory.actor_id}` : null,
     text: memory.note,
     capturedAt: memory.captured_at,
     createdAt: memory.created_at,

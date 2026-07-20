@@ -1,0 +1,5 @@
+# 后续启用邮箱验证码时配置。当前注册流程不读取这些变量。
+RESEND_API_KEY=
+AUTH_EMAIL_FROM=
+AUTH_EMAIL_REPLY_TO=
+AUTH_EMAIL_DOMAIN=

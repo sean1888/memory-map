@@ -80,7 +80,6 @@ export function UploadConfirm({
   const initialPlace = requestedNewPlace ? undefined : (matchedInitialPlace ?? context.places[0]);
 
   const [files, setFiles] = useState<File[]>([]);
-  const [author, setAuthor] = useState("");
   const [note, setNote] = useState("");
   const [selectedPlaceId, setSelectedPlaceId] = useState(
     requestedNewPlace ? "new" : (initialPlace?.id ?? context.places[0]?.id ?? "new"),
@@ -218,8 +217,8 @@ export function UploadConfirm({
 
   const submit = async () => {
     setError(null);
-    if (!author.trim() || !note.trim()) {
-      setError("请填写署名和文字。");
+    if (!note.trim()) {
+      setError("请填写一段文字。");
       return;
     }
     if (files.length === 0) {
@@ -237,7 +236,6 @@ export function UploadConfirm({
 
     const formData = new FormData();
     formData.set("clientRequestId", crypto.randomUUID());
-    formData.set("author", author.trim());
     formData.set("note", note.trim());
     formData.set("placeId", selectedPlaceId);
     formData.set("latitude", String(coordinates.latitude));
@@ -305,15 +303,6 @@ export function UploadConfirm({
           }}
         />
         <label className="mt-4 block text-[13px] font-medium">
-          你的名字
-          <input
-            value={author}
-            onChange={(event) => setAuthor(event.target.value)}
-            maxLength={30}
-            className="mt-1.5 w-full rounded-[8px] border border-border bg-surface px-3 py-2.5 outline-none focus:border-accent"
-          />
-        </label>
-        <label className="mt-3 block text-[13px] font-medium">
           一段文字
           <textarea
             value={note}

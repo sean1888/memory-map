@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { UploadConfirm } from "@/components/scene/UploadConfirm";
-import { BOOKMARK_COOKIE } from "@/lib/auth";
+import { BOOKMARK_COOKIE, getCurrentUser, SESSION_COOKIE } from "@/lib/auth";
+import { getBindings } from "@/lib/cloudflare";
 import { getUploadContext } from "@/lib/repository";
 
 export const metadata: Metadata = {
@@ -18,6 +20,16 @@ export default async function Page({
   const { from, placeId, sceneId } = await searchParams;
   const validFrom = from === "place" || from === "scene" ? from : "global";
   const cookieStore = await cookies();
+  const user = await getCurrentUser(
+    getBindings().DB,
+    cookieStore.get(SESSION_COOKIE)?.value ?? null,
+  );
+  if (!user) {
+    const params = new URLSearchParams({ from: validFrom });
+    if (placeId) params.set("placeId", placeId);
+    if (sceneId) params.set("sceneId", sceneId);
+    redirect(`/login?next=${encodeURIComponent(`/upload?${params}`)}`);
+  }
   const context = await getUploadContext(cookieStore.get(BOOKMARK_COOKIE)?.value);
   return <UploadConfirm context={context} from={validFrom} placeId={placeId} sceneId={sceneId} />;
 }

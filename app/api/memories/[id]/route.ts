@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
-import { BOOKMARK_COOKIE, findActorId, getActorToken, serializeCookie } from "@/lib/auth";
+import { BOOKMARK_COOKIE, requireUser, serializeCookie } from "@/lib/auth";
 import { getBindings } from "@/lib/cloudflare";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { DB, IMAGES } = getBindings();
   const session = DB.withSession("first-primary");
-  const actorId = await findActorId(session, getActorToken(request));
-  if (!actorId) return NextResponse.json({ error: "无权删除此记录" }, { status: 403 });
+  const user = await requireUser(session, request);
+  if (!user) return NextResponse.json({ error: "请先登录" }, { status: 401 });
 
   const memory = await session
     .prepare("SELECT actor_id FROM memories WHERE id = ? AND deleted_at IS NULL")
     .bind(id)
     .first<{ actor_id: string }>();
   if (!memory) return NextResponse.json({ error: "记录不存在" }, { status: 404 });
-  if (memory.actor_id !== actorId) {
+  if (memory.actor_id !== user.actorId) {
     return NextResponse.json({ error: "只能删除自己创建的记录" }, { status: 403 });
   }
 
@@ -35,7 +35,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
          (id, actor_id, entity_type, entity_id, action)
          VALUES (?, ?, 'memory', ?, 'delete')`,
       )
-      .bind(crypto.randomUUID(), actorId, id),
+      .bind(crypto.randomUUID(), user.actorId, id),
   ]);
 
   await Promise.all(assets.map((asset) => IMAGES.delete(asset.r2_key)));

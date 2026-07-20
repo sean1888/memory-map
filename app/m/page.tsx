@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { SceneMobile } from "@/components/scene/SceneMobile";
-import { BOOKMARK_COOKIE } from "@/lib/auth";
+import { BOOKMARK_COOKIE, SESSION_COOKIE } from "@/lib/auth";
 import { getSceneData } from "@/lib/repository";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default async function Page({
   const cookieStore = await cookies();
   const data = await getSceneData(
     place,
-    cookieStore.get("memory_actor")?.value,
+    cookieStore.get(SESSION_COOKIE)?.value,
     cookieStore.get(BOOKMARK_COOKIE)?.value,
   );
   if (!data || data.scenes.length === 0) notFound();

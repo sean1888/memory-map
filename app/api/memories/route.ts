@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { BOOKMARK_COOKIE, ensureActor, serializeCookie } from "@/lib/auth";
+import { BOOKMARK_COOKIE, requireUser, serializeCookie } from "@/lib/auth";
 import { getBindings } from "@/lib/cloudflare";
 
 const MAX_FILES = 6;
@@ -10,7 +10,6 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/a
 
 const inputSchema = z.object({
   clientRequestId: z.string().uuid(),
-  author: z.string().trim().min(1).max(30),
   note: z.string().trim().min(1).max(2000),
   placeId: z.string().min(1),
   placeName: z.string().trim().max(80).optional(),
@@ -46,10 +45,14 @@ function extensionFor(type: string): string {
 }
 
 export async function POST(request: Request) {
+  const { DB, IMAGES } = getBindings();
+  const session = DB.withSession("first-primary");
+  const user = await requireUser(session, request);
+  if (!user) return NextResponse.json({ error: "请先登录后再记录" }, { status: 401 });
+
   const formData = await request.formData();
   const parsed = inputSchema.safeParse({
     clientRequestId: formData.get("clientRequestId"),
-    author: formData.get("author"),
     note: formData.get("note"),
     placeId: formData.get("placeId"),
     placeName: optionalString(formData, "placeName"),
@@ -90,8 +93,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const { DB, IMAGES } = getBindings();
-  const session = DB.withSession("first-primary");
   const input = parsed.data;
   const existing = await session
     .prepare("SELECT id FROM memories WHERE client_request_id = ?")
@@ -101,7 +102,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, id: existing.id, duplicate: true });
   }
 
-  const actor = await ensureActor(session, request, input.author);
   const memoryId = crypto.randomUUID();
   let placeId = input.placeId;
   let sceneId = input.sceneId ?? null;
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
           input.address ?? null,
           input.latitude,
           input.longitude,
-          actor.actorId,
+          user.actorId,
         ),
     );
   } else {
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
           input.latitude,
           input.longitude,
           input.directionDegrees ?? null,
-          actor.actorId,
+          user.actorId,
         ),
     );
   } else if (sceneId) {
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
           input.clientRequestId,
           placeId,
           sceneId,
-          actor.actorId,
+          user.actorId,
           input.note,
           input.latitude,
           input.longitude,
@@ -238,7 +238,7 @@ export async function POST(request: Request) {
         )
         .bind(
           crypto.randomUUID(),
-          actor.actorId,
+          user.actorId,
           memoryId,
           JSON.stringify({ placeId, sceneId, assetCount: files.length }),
         ),
@@ -258,7 +258,6 @@ export async function POST(request: Request) {
     sceneId,
     bookmark: session.getBookmark(),
   });
-  if (actor.cookie) response.headers.append("Set-Cookie", actor.cookie);
   const bookmark = session.getBookmark();
   if (bookmark)
     response.headers.append("Set-Cookie", serializeCookie(BOOKMARK_COOKIE, bookmark, 300));

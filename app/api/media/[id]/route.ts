@@ -1,4 +1,4 @@
-import { findActorId, getActorToken } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { getBindings } from "@/lib/cloudflare";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,8 +15,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!asset?.r2_key) return new Response("Not found", { status: 404 });
 
   if (asset.visibility === "self") {
-    const actorId = await findActorId(DB, getActorToken(request));
-    if (actorId !== asset.actor_id) return new Response("Not found", { status: 404 });
+    const user = await requireUser(DB, request);
+    if (user?.actorId !== asset.actor_id) return new Response("Not found", { status: 404 });
   }
 
   const object = await IMAGES.get(asset.r2_key, {

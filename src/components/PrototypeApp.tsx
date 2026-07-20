@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, ArrowLeft, Users, X, Trash2 } from "lucide-react";
+import { MapPin, Plus, ArrowLeft, Users, X, Trash2, UserRound } from "lucide-react";
+import type { CurrentUser } from "@/lib/auth";
 import type { MemoryDTO, PlaceDTO, UploadContextDTO } from "@/lib/db";
 import { UploadConfirm } from "@/components/scene/UploadConfirm";
 
@@ -44,11 +45,15 @@ export function PrototypeApp({
   uploadContext,
   initialPlaceId,
   initialFilter,
+  user,
+  initialDraftCoordinates,
 }: {
   places: PlaceDTO[];
   uploadContext: UploadContextDTO;
   initialPlaceId?: string;
   initialFilter?: string;
+  user: CurrentUser | null;
+  initialDraftCoordinates?: Coordinates;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>(initialFilter ?? "all");
@@ -81,10 +86,16 @@ export function PrototypeApp({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopBar screen={screen} onHome={goHome} onBack={goHome} />
+      <TopBar screen={screen} onHome={goHome} onBack={goHome} user={user} />
 
       {screen === "map" && (
-        <MapScreen places={places} uploadContext={uploadContext} onOpen={openPlace} />
+        <MapScreen
+          places={places}
+          uploadContext={uploadContext}
+          onOpen={openPlace}
+          user={user}
+          initialDraftCoordinates={initialDraftCoordinates}
+        />
       )}
       {screen === "place" && activePlace && (
         <PlaceScreen
@@ -103,10 +114,12 @@ function TopBar({
   screen,
   onHome,
   onBack,
+  user,
 }: {
   screen: Screen;
   onHome: () => void;
   onBack: () => void;
+  user: CurrentUser | null;
 }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
@@ -125,8 +138,30 @@ function TopBar({
           </button>
         )}
         <div className="ml-auto flex items-center gap-2">
+          {user ? (
+            <Link
+              href="/profile"
+              className="inline-flex h-9 items-center gap-2 px-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="h-7 w-7 rounded-[6px] object-cover" />
+              ) : (
+                <span className="grid h-7 w-7 place-items-center rounded-[6px] bg-surface-2 text-xs">
+                  {user.displayName.slice(0, 1)}
+                </span>
+              )}
+              <span className="hidden sm:inline">{user.displayName}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex h-9 items-center gap-1.5 px-2 text-sm text-muted-foreground"
+            >
+              <UserRound size={15} /> 登录
+            </Link>
+          )}
           <Link
-            href="/upload?from=global"
+            href={user ? "/upload?from=global" : "/login?next=%2Fupload%3Ffrom%3Dglobal"}
             className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-accent px-3 text-sm text-accent-foreground"
           >
             <Plus size={15} />
@@ -143,10 +178,14 @@ function MapScreen({
   places,
   uploadContext,
   onOpen,
+  user,
+  initialDraftCoordinates,
 }: {
   places: PlaceDTO[];
   uploadContext: UploadContextDTO;
   onOpen: (p: PlaceDTO) => void;
+  user: CurrentUser | null;
+  initialDraftCoordinates?: Coordinates;
 }) {
   const router = useRouter();
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
@@ -154,6 +193,23 @@ function MapScreen({
     coordinates: Coordinates;
     placeId: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!initialDraftCoordinates || !user) return;
+    let nearest: PlaceDTO | null = null;
+    let minimumDistance = Infinity;
+    for (const place of places) {
+      const distance = distanceInMeters(initialDraftCoordinates, place);
+      if (distance < minimumDistance) {
+        minimumDistance = distance;
+        nearest = place;
+      }
+    }
+    setCheckInDraft({
+      coordinates: initialDraftCoordinates,
+      placeId: nearest && minimumDistance <= 300 ? nearest.id : "new",
+    });
+  }, [initialDraftCoordinates, places, user]);
 
   // 将 places 转换为 MapboxMap 需要的格式
   const mapPlaces = places.map((p) => ({
@@ -167,6 +223,11 @@ function MapScreen({
 
   const handleMapDblClick = (lng: number, lat: number) => {
     const coordinates = { latitude: lat, longitude: lng };
+    if (!user) {
+      const next = `/?draftLat=${lat}&draftLng=${lng}`;
+      router.push(`/login?next=${encodeURIComponent(next)}`);
+      return;
+    }
     let nearest: PlaceDTO | null = null;
     let minimumDistance = Infinity;
     for (const p of places) {
@@ -219,7 +280,7 @@ function MapScreen({
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-medium">地点记忆</h2>
             <Link
-              href="/upload?from=global"
+              href={user ? "/upload?from=global" : "/login?next=%2Fupload%3Ffrom%3Dglobal"}
               className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
             >
               <Plus size={12} /> 记录这一刻
@@ -396,9 +457,17 @@ function EntryBlock({ entry, onDeleted }: { entry: MemoryDTO; onDeleted: () => v
     <article className="animate-fade-up">
       <header className="flex items-center gap-3">
         {/* 印章风格头像 */}
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[3px] bg-accent font-editorial text-sm text-accent-foreground">
-          {entry.authorInitial}
-        </div>
+        {entry.authorAvatarUrl ? (
+          <img
+            src={entry.authorAvatarUrl}
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-[3px] object-cover"
+          />
+        ) : (
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[3px] bg-accent font-editorial text-sm text-accent-foreground">
+            {entry.authorInitial}
+          </div>
+        )}
         <div className="min-w-0">
           <div className="text-sm font-medium">{entry.author}的记录</div>
           <div className="text-xs text-muted-foreground">

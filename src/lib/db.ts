@@ -7,6 +7,7 @@ export type MemoryDTO = {
   sceneId: string | null;
   author: string;
   authorInitial: string;
+  authorAvatarUrl: string | null;
   text: string;
   capturedAt: string | null;
   createdAt: string;
