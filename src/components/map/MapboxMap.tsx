@@ -6,6 +6,7 @@ import Map, {
   NavigationControl,
   GeolocateControl,
   Popup,
+  type MapMouseEvent,
   type MapRef,
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -85,7 +86,8 @@ export default function MapboxMap({ places, onPlaceClick, onMapDblClick, selecte
   );
 
   const handleMapDblClick = useCallback(
-    (e: { lngLat: { lng: number; lat: number } }) => {
+    (e: MapMouseEvent) => {
+      e.preventDefault();
       onMapDblClick(e.lngLat.lng, e.lngLat.lat);
     },
     [onMapDblClick],

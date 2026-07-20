@@ -10,9 +10,15 @@ function imageFor(moment: MemoryDTO) {
   return moment.photos[0] ?? "/assets/upload-photo.jpg";
 }
 
-export function SceneMobile({ data }: { data: SceneDataDTO }) {
+export function SceneMobile({
+  data,
+  initialSceneId,
+}: {
+  data: SceneDataDTO;
+  initialSceneId?: string;
+}) {
   const { place, scenes, moments } = data;
-  const scene = scenes[0];
+  const scene = scenes.find((item) => item.id === initialSceneId) ?? scenes[0];
   const sceneMoments = moments.filter((moment) => moment.sceneId === scene.id);
   const [leftId, setLeftId] = useState(sceneMoments[0]?.id ?? "");
   const [rightId, setRightId] = useState(sceneMoments[1]?.id ?? sceneMoments[0]?.id ?? "");
@@ -43,7 +49,7 @@ export function SceneMobile({ data }: { data: SceneDataDTO }) {
       <div className="mx-auto flex w-full max-w-105 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur">
           <Link
-            href="/scene"
+            href={`/scene?place=${place.id}&scene=${scene.id}`}
             aria-label="返回"
             className="grid h-9 w-9 place-items-center text-muted-foreground"
           >

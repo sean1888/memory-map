@@ -16,7 +16,7 @@ type SceneMarker = {
 type Props = {
   center: { latitude: number; longitude: number };
   scenes: SceneMarker[];
-  activeSceneId: string;
+  activeSceneId: string | null;
   onSceneChange: (id: string) => void;
 };
 
@@ -29,14 +29,15 @@ export default function SceneMapboxMap({ center, scenes, activeSceneId, onSceneC
   const activeLongitude = activeScene?.longitude;
 
   useEffect(() => {
-    if (activeLatitude === undefined || activeLongitude === undefined) return;
-
     mapRef.current?.flyTo({
-      center: [activeLongitude, activeLatitude],
-      zoom: 16,
+      center:
+        activeLatitude === undefined || activeLongitude === undefined
+          ? [center.longitude, center.latitude]
+          : [activeLongitude, activeLatitude],
+      zoom: activeLatitude === undefined ? 15 : 16,
       duration: 800,
     });
-  }, [activeLatitude, activeLongitude]);
+  }, [activeLatitude, activeLongitude, center.latitude, center.longitude]);
 
   return (
     <Map

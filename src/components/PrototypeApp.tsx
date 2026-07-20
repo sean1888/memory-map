@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { MapPin, Plus, ArrowLeft, Users, X, Trash2 } from "lucide-react";
-import type { MemoryDTO, PlaceDTO } from "@/lib/db";
-import CheckInForm from "@/components/CheckInForm";
+import type { MemoryDTO, PlaceDTO, UploadContextDTO } from "@/lib/db";
+import { UploadConfirm } from "@/components/scene/UploadConfirm";
 
 // SSR 安全导入 Mapbox 地图组件
 const MapboxMap = dynamic(() => import("@/components/map/MapboxMap"), {
@@ -24,13 +24,29 @@ const MapboxMap = dynamic(() => import("@/components/map/MapboxMap"), {
 });
 
 type Screen = "map" | "place";
+type Coordinates = { latitude: number; longitude: number };
+
+function distanceInMeters(first: Coordinates, second: Coordinates): number {
+  const earthRadius = 6371000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = toRadians(second.latitude - first.latitude);
+  const longitudeDelta = toRadians(second.longitude - first.longitude);
+  const firstLatitude = toRadians(first.latitude);
+  const secondLatitude = toRadians(second.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
 
 export function PrototypeApp({
   places,
+  uploadContext,
   initialPlaceId,
   initialFilter,
 }: {
   places: PlaceDTO[];
+  uploadContext: UploadContextDTO;
   initialPlaceId?: string;
   initialFilter?: string;
 }) {
@@ -67,7 +83,9 @@ export function PrototypeApp({
     <div className="min-h-screen bg-background text-foreground">
       <TopBar screen={screen} onHome={goHome} onBack={goHome} />
 
-      {screen === "map" && <MapScreen places={places} onOpen={openPlace} />}
+      {screen === "map" && (
+        <MapScreen places={places} uploadContext={uploadContext} onOpen={openPlace} />
+      )}
       {screen === "place" && activePlace && (
         <PlaceScreen
           place={activePlace}
@@ -121,11 +139,21 @@ function TopBar({
 }
 
 /* ---------- 地图发现 ---------- */
-function MapScreen({ places, onOpen }: { places: PlaceDTO[]; onOpen: (p: PlaceDTO) => void }) {
+function MapScreen({
+  places,
+  uploadContext,
+  onOpen,
+}: {
+  places: PlaceDTO[];
+  uploadContext: UploadContextDTO;
+  onOpen: (p: PlaceDTO) => void;
+}) {
   const router = useRouter();
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [checkInCoords, setCheckInCoords] = useState<{ lng: number; lat: number } | null>(null);
-  const [checkInPlaceId, setCheckInPlaceId] = useState<string | undefined>();
+  const [checkInDraft, setCheckInDraft] = useState<{
+    coordinates: Coordinates;
+    placeId: string;
+  } | null>(null);
 
   // 将 places 转换为 MapboxMap 需要的格式
   const mapPlaces = places.map((p) => ({
@@ -138,22 +166,27 @@ function MapScreen({ places, onOpen }: { places: PlaceDTO[]; onOpen: (p: PlaceDT
   }));
 
   const handleMapDblClick = (lng: number, lat: number) => {
-    // 找到最近的已知地点
+    const coordinates = { latitude: lat, longitude: lng };
     let nearest: PlaceDTO | null = null;
-    let minDist = Infinity;
+    let minimumDistance = Infinity;
     for (const p of places) {
-      const dist = Math.sqrt((p.latitude - lat) ** 2 + (p.longitude - lng) ** 2);
-      if (dist < minDist) {
-        minDist = dist;
+      const distance = distanceInMeters(coordinates, {
+        latitude: p.latitude,
+        longitude: p.longitude,
+      });
+      if (distance < minimumDistance) {
+        minimumDistance = distance;
         nearest = p;
       }
     }
-    setCheckInPlaceId(nearest && minDist < 0.5 ? nearest.id : undefined);
-    setCheckInCoords({ lng, lat });
+    setCheckInDraft({
+      coordinates,
+      placeId: nearest && minimumDistance <= 300 ? nearest.id : "new",
+    });
   };
 
   const handleCheckInSuccess = () => {
-    setCheckInCoords(null);
+    setCheckInDraft(null);
     router.refresh();
   };
 
@@ -238,13 +271,13 @@ function MapScreen({ places, onOpen }: { places: PlaceDTO[]; onOpen: (p: PlaceDT
         </div>
       </div>
 
-      {/* 打卡表单弹窗 */}
-      {checkInCoords && (
-        <CheckInForm
-          latitude={checkInCoords.lat}
-          longitude={checkInCoords.lng}
-          placeId={checkInPlaceId}
-          onClose={() => setCheckInCoords(null)}
+      {checkInDraft && (
+        <UploadConfirm
+          context={uploadContext}
+          placeId={checkInDraft.placeId}
+          initialCoordinates={checkInDraft.coordinates}
+          variant="dialog"
+          onClose={() => setCheckInDraft(null)}
           onSuccess={handleCheckInSuccess}
         />
       )}
@@ -278,8 +311,11 @@ function PlaceScreen({
         <p className="mt-2 text-sm text-muted-foreground">
           {authors.length} 位朋友在这里留下了 {authors.length} 段记忆
         </p>
-        <Link href="/scene" className="mt-4 text-sm text-accent hover:underline">
-          查看这个视角的不同时间 →
+        <Link
+          href={`/scene?place=${place.id}`}
+          className="mt-4 text-sm text-accent hover:underline"
+        >
+          查看这个地点的不同时间 →
         </Link>
       </div>
 

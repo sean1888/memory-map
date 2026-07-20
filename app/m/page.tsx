@@ -10,12 +10,19 @@ export const metadata: Metadata = {
   description: "手机端同景时刻比较视图。",
 };
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ place?: string; scene?: string }>;
+}) {
+  const { place, scene } = await searchParams;
+  if (!place) notFound();
   const cookieStore = await cookies();
   const data = await getSceneData(
+    place,
     cookieStore.get("memory_actor")?.value,
     cookieStore.get(BOOKMARK_COOKIE)?.value,
   );
-  if (!data) notFound();
-  return <SceneMobile data={data} />;
+  if (!data || data.scenes.length === 0) notFound();
+  return <SceneMobile data={data} initialSceneId={scene} />;
 }

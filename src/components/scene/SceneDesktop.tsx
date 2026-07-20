@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Calendar, Camera, Cloud, Compass, MapPin, Plus, Smartphone, Users } from "lucide-react";
 import { CompareSlider } from "@/components/scene/CompareSlider";
@@ -17,6 +18,7 @@ const SceneMapboxMap = dynamic(() => import("@/components/map/SceneMapboxMap"), 
 });
 
 type Mode = "single" | "compare" | "all";
+const OTHER_GROUP_ID = "other-place-memories";
 
 function imageFor(moment: MemoryDTO) {
   return moment.photos[0] ?? "/assets/upload-photo.jpg";
@@ -27,18 +29,41 @@ function daysBetween(a: string | null, b: string | null) {
   return Math.abs(Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
 }
 
-export function SceneDesktop({ data }: { data: SceneDataDTO }) {
+export function SceneDesktop({
+  data,
+  initialSceneId,
+}: {
+  data: SceneDataDTO;
+  initialSceneId?: string;
+}) {
+  const router = useRouter();
   const { place, scenes, moments } = data;
-  const firstScene = scenes[0];
-  const firstMoments = moments.filter((moment) => moment.sceneId === firstScene.id);
-  const [activeSceneId, setActiveSceneId] = useState(firstScene.id);
-  const [mode, setMode] = useState<Mode>("compare");
-  const [leftId, setLeftId] = useState(firstMoments[0]?.id ?? "");
-  const [rightId, setRightId] = useState(firstMoments[1]?.id ?? firstMoments[0]?.id ?? "");
-  const [singleId, setSingleId] = useState(firstMoments[0]?.id ?? "");
+  const unassignedMoments = moments.filter((moment) => moment.sceneId === null);
+  const requestedScene = scenes.find((scene) => scene.id === initialSceneId);
+  const mostActiveScene = [...scenes].sort(
+    (first, second) => second.momentCount - first.momentCount,
+  )[0];
+  const preferredScene =
+    requestedScene ??
+    (mostActiveScene && (mostActiveScene.momentCount > 0 || unassignedMoments.length === 0)
+      ? mostActiveScene
+      : undefined);
+  const initialGroupId = preferredScene?.id ?? OTHER_GROUP_ID;
+  const initialMoments = preferredScene
+    ? moments.filter((moment) => moment.sceneId === preferredScene.id)
+    : unassignedMoments;
+  const [activeGroupId, setActiveGroupId] = useState(initialGroupId);
+  const [mode, setMode] = useState<Mode>(
+    preferredScene && initialMoments.length >= 2 ? "compare" : preferredScene ? "single" : "all",
+  );
+  const [leftId, setLeftId] = useState(initialMoments[0]?.id ?? "");
+  const [rightId, setRightId] = useState(initialMoments[1]?.id ?? initialMoments[0]?.id ?? "");
+  const [singleId, setSingleId] = useState(initialMoments[0]?.id ?? "");
 
-  const activeScene = scenes.find((scene) => scene.id === activeSceneId) ?? firstScene;
-  const sceneMoments = moments.filter((moment) => moment.sceneId === activeSceneId);
+  const activeScene = scenes.find((scene) => scene.id === activeGroupId);
+  const sceneMoments = activeScene
+    ? moments.filter((moment) => moment.sceneId === activeScene.id)
+    : unassignedMoments;
   const left = sceneMoments.find((moment) => moment.id === leftId) ?? sceneMoments[0];
   const right =
     sceneMoments.find((moment) => moment.id === rightId) ?? sceneMoments[1] ?? sceneMoments[0];
@@ -48,12 +73,20 @@ export function SceneDesktop({ data }: { data: SceneDataDTO }) {
     [left, right],
   );
 
-  const selectScene = (id: string) => {
-    const nextMoments = moments.filter((moment) => moment.sceneId === id);
-    setActiveSceneId(id);
+  const selectGroup = (id: string) => {
+    const nextScene = scenes.find((scene) => scene.id === id);
+    const nextMoments = nextScene
+      ? moments.filter((moment) => moment.sceneId === id)
+      : unassignedMoments;
+    setActiveGroupId(id);
     setLeftId(nextMoments[0]?.id ?? "");
     setRightId(nextMoments[1]?.id ?? nextMoments[0]?.id ?? "");
     setSingleId(nextMoments[0]?.id ?? "");
+    setMode(nextScene && nextMoments.length >= 2 ? "compare" : nextScene ? "single" : "all");
+    router.replace(
+      nextScene ? `/scene?place=${place.id}&scene=${nextScene.id}` : `/scene?place=${place.id}`,
+      { scroll: false },
+    );
   };
 
   const pickForCompare = (moment: MemoryDTO) => {
@@ -64,11 +97,16 @@ export function SceneDesktop({ data }: { data: SceneDataDTO }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopBar sceneId={activeSceneId} />
+      <TopBar placeId={place.id} sceneId={activeScene?.id} />
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[1fr_1.35fr]">
           <section className="self-start lg:sticky lg:top-20">
-            <MapPanel data={data} activeSceneId={activeSceneId} onSceneChange={selectScene} />
+            <MapPanel
+              data={data}
+              activeSceneId={activeScene?.id}
+              activeMomentCount={sceneMoments.length}
+              onSceneChange={selectGroup}
+            />
           </section>
 
           <section>
@@ -78,11 +116,11 @@ export function SceneDesktop({ data }: { data: SceneDataDTO }) {
                 {place.city} · {place.name}
               </p>
               <h1 className="mt-1.5 font-editorial text-3xl leading-tight sm:text-[34px]">
-                {activeScene.title}
+                {activeScene?.title ?? "其他地点记录"}
               </h1>
               <p className="mt-2 inline-flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
-                  <Compass size={12} /> {activeScene.direction}
+                  <Compass size={12} /> {activeScene?.direction ?? "未归入具体视角"}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Users size={12} /> {sceneMoments.length} 个时刻
@@ -90,12 +128,37 @@ export function SceneDesktop({ data }: { data: SceneDataDTO }) {
               </p>
             </header>
 
+            {scenes.length + (unassignedMoments.length > 0 ? 1 : 0) > 1 && (
+              <label className="mb-4 block max-w-sm text-xs font-medium text-muted-foreground">
+                记录范围
+                <select
+                  value={activeGroupId}
+                  onChange={(event) => selectGroup(event.target.value)}
+                  className="mt-1.5 h-10 w-full rounded-[8px] border border-border bg-surface px-3 text-sm text-foreground"
+                >
+                  {scenes.map((scene) => (
+                    <option key={scene.id} value={scene.id}>
+                      {scene.title} · {scene.momentCount} 个时刻
+                    </option>
+                  ))}
+                  {unassignedMoments.length > 0 && (
+                    <option value={OTHER_GROUP_ID}>
+                      其他地点记录 · {unassignedMoments.length} 条
+                    </option>
+                  )}
+                </select>
+              </label>
+            )}
+
             <div
               role="tablist"
               aria-label="查看方式"
               className="mb-4 inline-flex rounded-[8px] border border-border bg-surface p-1 text-sm"
             >
-              {(["single", "compare", "all"] as const).map((value) => (
+              {(activeScene && sceneMoments.length >= 2
+                ? (["single", "compare", "all"] as const)
+                : (["single", "all"] as const)
+              ).map((value) => (
                 <button
                   key={value}
                   role="tab"
@@ -114,7 +177,7 @@ export function SceneDesktop({ data }: { data: SceneDataDTO }) {
 
             {sceneMoments.length === 0 ? (
               <p className="rounded-[8px] border border-border p-5 text-sm text-muted-foreground">
-                该视角暂无时刻记录。
+                {activeScene ? "该视角暂无时刻记录。" : "这个地点还没有未归入视角的记录。"}
               </p>
             ) : mode === "compare" && left && right ? (
               <>
@@ -221,11 +284,11 @@ function MomentHeader({ moment, align = "left" }: { moment: MemoryDTO; align?: "
   );
 }
 
-function TopBar({ sceneId }: { sceneId: string }) {
+function TopBar({ placeId, sceneId }: { placeId: string; sceneId?: string }) {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <Link href="/" className="inline-flex items-center gap-2">
+        <Link href={`/?place=${placeId}`} className="inline-flex items-center gap-2">
           <span className="inline-block h-2 w-2 rounded-full bg-accent" />
           <span className="font-editorial text-base">在场</span>
           <span className="hidden text-xs text-muted-foreground sm:inline">
@@ -233,11 +296,20 @@ function TopBar({ sceneId }: { sceneId: string }) {
           </span>
         </Link>
         <nav className="ml-auto flex items-center gap-1 text-sm text-muted-foreground">
-          <Link href="/m" className="hidden h-9 items-center gap-1.5 px-2 sm:inline-flex">
-            <Smartphone size={14} /> 手机视图
-          </Link>
+          {sceneId && (
+            <Link
+              href={`/m?place=${placeId}&scene=${sceneId}`}
+              className="hidden h-9 items-center gap-1.5 px-2 sm:inline-flex"
+            >
+              <Smartphone size={14} /> 手机视图
+            </Link>
+          )}
           <Link
-            href={`/upload?from=scene&sceneId=${sceneId}`}
+            href={
+              sceneId
+                ? `/upload?from=scene&sceneId=${sceneId}`
+                : `/upload?from=place&placeId=${placeId}`
+            }
             className="inline-flex h-9 items-center gap-1.5 px-2"
           >
             <Camera size={14} /> 记录这一刻
@@ -251,25 +323,27 @@ function TopBar({ sceneId }: { sceneId: string }) {
 function MapPanel({
   data,
   activeSceneId,
+  activeMomentCount,
   onSceneChange,
 }: {
   data: SceneDataDTO;
-  activeSceneId: string;
+  activeSceneId?: string;
+  activeMomentCount: number;
   onSceneChange: (id: string) => void;
 }) {
   const { place, scenes } = data;
-  const activeScene = scenes.find((scene) => scene.id === activeSceneId) ?? scenes[0];
+  const activeScene = scenes.find((scene) => scene.id === activeSceneId);
   return (
     <div>
       <div className="relative aspect-4/3 overflow-hidden rounded-[8px] border border-border bg-surface-2">
         <SceneMapboxMap
           center={{ latitude: place.latitude, longitude: place.longitude }}
           scenes={scenes}
-          activeSceneId={activeSceneId}
+          activeSceneId={activeSceneId ?? null}
           onSceneChange={onSceneChange}
         />
         <div className="pointer-events-none absolute bottom-2 left-2 rounded-[8px] bg-background/85 px-2 py-1 text-[11px] text-muted-foreground">
-          {activeScene.momentCount} 个时刻
+          {activeMomentCount} 个时刻
         </div>
       </div>
       <div className="mt-3 rounded-[8px] border border-border bg-surface p-3 text-xs leading-6 text-muted-foreground">
@@ -281,14 +355,19 @@ function MapPanel({
         </div>
         <p className="mt-1">{place.address}</p>
         <p className="mt-2">
-          当前视角：<span className="text-foreground">{activeScene.title}</span>
+          当前范围：
+          <span className="text-foreground">{activeScene?.title ?? "其他地点记录"}</span>
         </p>
       </div>
       <Link
-        href={`/upload?from=scene&sceneId=${activeSceneId}`}
+        href={
+          activeScene
+            ? `/upload?from=scene&sceneId=${activeScene.id}`
+            : `/upload?from=place&placeId=${place.id}`
+        }
         className="mt-3 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] bg-accent text-sm text-accent-foreground"
       >
-        <Plus size={15} /> 添加这个视角的新时刻
+        <Plus size={15} /> {activeScene ? "添加这个视角的新时刻" : "在这个地点记录新时刻"}
       </Link>
     </div>
   );

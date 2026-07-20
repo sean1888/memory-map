@@ -173,6 +173,7 @@ export async function getHomeData(
 }
 
 export async function getSceneData(
+  placeId: string,
   actorToken?: string | null,
   bookmark?: string | null,
 ): Promise<SceneDataDTO | null> {
@@ -181,10 +182,10 @@ export async function getSceneData(
   const actorKey = actorId ?? "";
   const place = await db
     .prepare(
-      `SELECT p.* FROM places p
-       WHERE EXISTS (SELECT 1 FROM scenes s WHERE s.place_id = p.id)
-       ORDER BY p.created_at LIMIT 1`,
+      `SELECT id, name, city, address, latitude, longitude
+       FROM places WHERE id = ?`,
     )
+    .bind(placeId)
     .first<{
       id: string;
       name: string;
@@ -226,10 +227,7 @@ export async function getSceneData(
     momentCount: Number(scene.moment_count),
   }));
 
-  const moments: MemoryDTO[] = [];
-  for (const scene of scenes) {
-    moments.push(...(await loadMemories(db, "scene_id", scene.id, actorId)));
-  }
+  const moments = await loadMemories(db, "place_id", place.id, actorId);
 
   return {
     place: {
