@@ -17,6 +17,9 @@ type MemoryRow = {
   actor_id: string;
   display_name: string;
   avatar_r2_key: string | null;
+  comment_count: number;
+  like_count: number;
+  liked_by_viewer: number;
   note: string;
   latitude: number;
   longitude: number;
@@ -60,12 +63,17 @@ async function loadMemories(
     ? "AND (COALESCE(m.captured_at, m.created_at) < ? OR (COALESCE(m.captured_at, m.created_at) = ? AND m.id < ?))"
     : "";
   const limitClause = options.limit ? "LIMIT ?" : "";
-  const bindings: Array<string | number> = [value, actorId ?? ""];
+  const bindings: Array<string | number> = [actorId ?? "", value, actorId ?? ""];
   if (options.cursor) bindings.push(options.cursor[0], options.cursor[0], options.cursor[1]);
   if (options.limit) bindings.push(options.limit);
   const { results } = await db
     .prepare(
-      `SELECT m.*, a.display_name, a.avatar_r2_key
+      `SELECT m.*, a.display_name, a.avatar_r2_key,
+         (SELECT COUNT(*) FROM memory_comments c
+          WHERE c.memory_id = m.id AND c.deleted_at IS NULL) AS comment_count,
+         (SELECT COUNT(*) FROM memory_likes l WHERE l.memory_id = m.id) AS like_count,
+         EXISTS(SELECT 1 FROM memory_likes l2
+          WHERE l2.memory_id = m.id AND l2.actor_id = ?) AS liked_by_viewer
        FROM memories m
        JOIN actors a ON a.id = m.actor_id
        WHERE m.${where} = ? AND m.deleted_at IS NULL
@@ -98,6 +106,7 @@ async function loadMemories(
     id: memory.id,
     placeId: memory.place_id,
     sceneId: memory.scene_id,
+    authorId: memory.actor_id,
     author: memory.display_name,
     authorInitial: memory.display_name.slice(0, 1),
     authorAvatarUrl: memory.avatar_r2_key ? `/api/avatars/${memory.actor_id}` : null,
@@ -115,6 +124,9 @@ async function loadMemories(
     gpsAccuracy: memory.gps_accuracy,
     photos: photos.get(memory.id) ?? [],
     canDelete: actorId === memory.actor_id,
+    commentCount: Number(memory.comment_count),
+    likeCount: Number(memory.like_count),
+    likedByViewer: Boolean(memory.liked_by_viewer),
   }));
 }
 
@@ -138,6 +150,7 @@ export async function getHomeData(
        LEFT JOIN memories m ON m.place_id = p.id AND m.deleted_at IS NULL
          AND (m.visibility = 'public' OR m.actor_id = ?)
        GROUP BY p.id
+       HAVING COUNT(m.id) > 0
        ORDER BY MAX(COALESCE(m.created_at, p.created_at)) DESC`,
     )
     .bind(actorKey, actorKey)

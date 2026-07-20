@@ -80,6 +80,10 @@
   animation: fade-up 220ms ease-out both;
 }
 
+body:has([data-comments-expanded="true"]) .place-cta {
+  display: none;
+}
+
 /* 首行缩进，中文排版惯例 */
 .text-indent {
   text-indent: 2em;

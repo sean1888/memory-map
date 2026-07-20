@@ -8,6 +8,7 @@ import { MapPin, Plus, ArrowLeft, Users, X, Trash2, UserRound } from "lucide-rea
 import type { CurrentUser } from "@/lib/auth";
 import type { MemoryDTO, PlaceDTO, UploadContextDTO } from "@/lib/db";
 import { UploadConfirm } from "@/components/scene/UploadConfirm";
+import { MemoryInteractions } from "@/components/memory/MemoryInteractions";
 
 // SSR 安全导入 Mapbox 地图组件
 const MapboxMap = dynamic(() => import("@/components/map/MapboxMap"), {
@@ -103,6 +104,7 @@ export function PrototypeApp({
           filter={filter}
           setFilter={updateFilter}
           onDeleted={() => router.refresh()}
+          isAuthenticated={Boolean(user)}
         />
       )}
     </div>
@@ -134,7 +136,7 @@ function TopBar({
         ) : (
           <button onClick={onHome} className="inline-flex items-center gap-2 text-sm font-medium">
             <MapPin size={16} className="text-accent" />
-            <span className="font-editorial text-base">地点记忆</span>
+            <span className="font-editorial text-base">在场 · 地点记忆地图</span>
           </button>
         )}
         <div className="ml-auto flex items-center gap-2">
@@ -278,7 +280,7 @@ function MapScreen({
         {/* 右侧：侧边栏列表 */}
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-medium">地点记忆</h2>
+            <h2 className="text-sm font-medium">在场 · 地点记忆地图</h2>
             <Link
               href={user ? "/upload?from=global" : "/login?next=%2Fupload%3Ffrom%3Dglobal"}
               className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
@@ -352,14 +354,17 @@ function PlaceScreen({
   filter,
   setFilter,
   onDeleted,
+  isAuthenticated,
 }: {
   place: PlaceDTO;
   filter: "all" | string;
   setFilter: (f: "all" | string) => void;
   onDeleted: () => void;
+  isAuthenticated: boolean;
 }) {
-  const authors = place.entries;
-  const shown = filter === "all" ? authors : authors.filter((e) => e.id === filter);
+  const entries = place.entries;
+  const authors = Array.from(new Map(entries.map((entry) => [entry.authorId, entry])).values());
+  const shown = filter === "all" ? entries : entries.filter((entry) => entry.authorId === filter);
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 pb-28">
@@ -370,7 +375,7 @@ function PlaceScreen({
         </p>
         <h1 className="mt-1 font-editorial text-3xl sm:text-4xl">{place.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {authors.length} 位朋友在这里留下了 {authors.length} 段记忆
+          {authors.length} 位朋友在这里留下了 {entries.length} 段记忆
         </p>
         <Link
           href={`/scene?place=${place.id}`}
@@ -383,11 +388,15 @@ function PlaceScreen({
       {/* 筛选标签 */}
       <div className="mb-5 flex flex-wrap gap-1.5 border-b border-border">
         <TabBtn active={filter === "all"} onClick={() => setFilter("all")}>
-          全部 · {authors.length}
+          全部 · {entries.length}
         </TabBtn>
-        {authors.map((e) => (
-          <TabBtn key={e.id} active={filter === e.id} onClick={() => setFilter(e.id)}>
-            {e.author}的记录
+        {authors.map((author) => (
+          <TabBtn
+            key={author.authorId}
+            active={filter === author.authorId}
+            onClick={() => setFilter(author.authorId)}
+          >
+            {author.author}的记录
           </TabBtn>
         ))}
       </div>
@@ -395,12 +404,17 @@ function PlaceScreen({
       {/* 记录 */}
       <div className="space-y-10">
         {shown.map((entry) => (
-          <EntryBlock key={entry.id} entry={entry} onDeleted={onDeleted} />
+          <EntryBlock
+            key={entry.id}
+            entry={entry}
+            onDeleted={onDeleted}
+            isAuthenticated={isAuthenticated}
+          />
         ))}
       </div>
 
       {/* 固定底部 CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur">
+      <div className="place-cta fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="min-w-0 text-xs text-muted-foreground truncate">
             你也在 {place.name}？记录一次，会自动收录到这个地点和对应的视角时间轴。
@@ -441,7 +455,15 @@ function TabBtn({
   );
 }
 
-function EntryBlock({ entry, onDeleted }: { entry: MemoryDTO; onDeleted: () => void }) {
+function EntryBlock({
+  entry,
+  onDeleted,
+  isAuthenticated,
+}: {
+  entry: MemoryDTO;
+  onDeleted: () => void;
+  isAuthenticated: boolean;
+}) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -502,6 +524,15 @@ function EntryBlock({ entry, onDeleted }: { entry: MemoryDTO; onDeleted: () => v
           ))}
         </div>
       )}
+
+      <MemoryInteractions
+        memoryId={entry.id}
+        placeId={entry.placeId}
+        isAuthenticated={isAuthenticated}
+        initialCommentCount={entry.commentCount}
+        initialLikeCount={entry.likeCount}
+        initiallyLiked={entry.likedByViewer}
+      />
 
       {expanded && (
         <div

@@ -5,6 +5,7 @@ export type MemoryDTO = {
   id: string;
   placeId: string;
   sceneId: string | null;
+  authorId: string;
   author: string;
   authorInitial: string;
   authorAvatarUrl: string | null;
@@ -22,6 +23,9 @@ export type MemoryDTO = {
   gpsAccuracy: number | null;
   photos: string[];
   canDelete: boolean;
+  commentCount: number;
+  likeCount: number;
+  likedByViewer: boolean;
 };
 
 export type PlaceDTO = {

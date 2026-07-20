@@ -303,7 +303,7 @@ export function UploadConfirm({
           }}
         />
         <label className="mt-4 block text-[13px] font-medium">
-          一段文字
+          写一写你当下的感受吧～
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
