@@ -106,6 +106,7 @@ export default function MapboxMap({ places, onPlaceClick, onMapDblClick, selecte
         style={{ width: "100%", height: "100%" }}
         mapStyle="mapbox://styles/mapbox/light-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
+        language="zh-Hans"
         onDblClick={handleMapDblClick}
         attributionControl={false}
       >

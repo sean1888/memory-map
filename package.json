@@ -1,6 +1,7 @@
 {
   "name": "memory-map",
   "private": true,
+  "packageManager": "pnpm@10.33.2",
   "sideEffects": false,
   "type": "module",
   "scripts": {
@@ -11,6 +12,9 @@
     "format": "prettier --write .",
     "deploy": "opennextjs-cloudflare && wrangler deploy",
     "preview": "opennextjs-cloudflare && wrangler dev"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver", "workerd"]
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

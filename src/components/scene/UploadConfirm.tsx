@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ArrowLeft,
   Check,
@@ -28,6 +29,16 @@ type SceneChoice = "existing" | "new";
 type Visibility = "self" | "participants" | "link" | "public";
 type Publish = "idle" | "publishing" | "done";
 type EntrySource = "global" | "place" | "scene";
+type Coordinates = { latitude: number; longitude: number };
+
+const LocationPickerMap = dynamic(() => import("@/components/map/LocationPickerMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="grid h-full place-items-center bg-surface-2 text-sm text-muted-foreground">
+      地图加载中…
+    </div>
+  ),
+});
 
 const ENTRY_LABEL: Record<EntrySource, string> = {
   global: "从首页记录",
@@ -57,6 +68,13 @@ export function UploadConfirm({
 
   const [manualDate, setManualDate] = useState<"exact" | "year" | "unknown">("exact");
   const [manualLocation, setManualLocation] = useState<"current" | "map" | null>(null);
+  const [coordinates, setCoordinates] = useState<Coordinates>({
+    latitude: scene.latitude,
+    longitude: scene.longitude,
+  });
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // 根据来源决定返回目标
   const backHref = (() => {
@@ -76,6 +94,38 @@ export function UploadConfirm({
   const doPublish = () => {
     setPublish("publishing");
     setTimeout(() => setPublish("done"), 900);
+  };
+
+  const openLocationPicker = () => {
+    setManualLocation("map");
+    setLocationError(null);
+    setShowLocationPicker(true);
+  };
+
+  const useCurrentLocation = () => {
+    setLocationError(null);
+    if (!navigator.geolocation) {
+      setLocationError("当前浏览器不支持定位，请在地图上选择。");
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoordinates({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setManualLocation("current");
+        setShowLocationPicker(false);
+        setLocating(false);
+      },
+      () => {
+        setLocationError("无法获取当前位置，请检查定位权限或在地图上选择。");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   const placeLocked = from === "place" || from === "scene";
@@ -183,9 +233,14 @@ export function UploadConfirm({
               <InfoRow
                 icon={<MapPin size={14} />}
                 label="地点"
-                value="杭州市北山街"
+                value={
+                  manualLocation
+                    ? `${coordinates.latitude.toFixed(5)}, ${coordinates.longitude.toFixed(5)}`
+                    : "杭州市北山街"
+                }
                 editable
                 confirmed
+                onEdit={openLocationPicker}
               />
               <InfoRow
                 icon={<Calendar size={14} />}
@@ -215,7 +270,8 @@ export function UploadConfirm({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setManualLocation("current")}
+                    onClick={useCurrentLocation}
+                    disabled={locating}
                     aria-pressed={manualLocation === "current"}
                     className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[8px] border text-[13px] ${
                       manualLocation === "current"
@@ -223,10 +279,10 @@ export function UploadConfirm({
                         : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Locate size={14} /> 使用我当前的位置
+                    <Locate size={14} /> {locating ? "定位中…" : "使用我当前的位置"}
                   </button>
                   <button
-                    onClick={() => setManualLocation("map")}
+                    onClick={openLocationPicker}
                     aria-pressed={manualLocation === "map"}
                     className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[8px] border text-[13px] ${
                       manualLocation === "map"
@@ -241,6 +297,11 @@ export function UploadConfirm({
                   <AlertCircle size={12} className="mt-0.5 shrink-0" />
                   <span>如果这是旧照片，不要选“使用我当前的位置”。</span>
                 </p>
+                {manualLocation && (
+                  <p className="mt-2 text-[11px] text-foreground">
+                    已选择：{coordinates.latitude.toFixed(5)}, {coordinates.longitude.toFixed(5)}
+                  </p>
+                )}
               </div>
 
               <div className="rounded-[8px] border border-border bg-surface p-3">
@@ -271,6 +332,36 @@ export function UploadConfirm({
                 </div>
               </div>
             </div>
+          )}
+
+          {showLocationPicker && (
+            <div className="mt-3 overflow-hidden rounded-[8px] border border-border bg-surface">
+              <div className="h-[300px] w-full">
+                <LocationPickerMap value={coordinates} onChange={setCoordinates} />
+              </div>
+              <div className="flex items-center gap-3 border-t border-border px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12px] font-medium">点击地图或拖动标记调整位置</div>
+                  <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    {coordinates.latitude.toFixed(5)}, {coordinates.longitude.toFixed(5)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLocationPicker(false)}
+                  className="h-9 shrink-0 rounded-[8px] bg-accent px-3 text-[12px] text-accent-foreground"
+                >
+                  确认此位置
+                </button>
+              </div>
+            </div>
+          )}
+
+          {locationError && (
+            <p role="alert" className="mt-2 flex items-start gap-1.5 text-[11px] text-accent">
+              <AlertCircle size={12} className="mt-0.5 shrink-0" />
+              {locationError}
+            </p>
           )}
         </section>
 
@@ -484,12 +575,14 @@ function InfoRow({
   value,
   editable,
   confirmed,
+  onEdit,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   editable?: boolean;
   confirmed?: boolean;
+  onEdit?: () => void;
 }) {
   return (
     <li className="flex items-center gap-3 px-3 py-3">
@@ -507,6 +600,8 @@ function InfoRow({
       )}
       {editable && (
         <button
+          type="button"
+          onClick={onEdit}
           aria-label={`修改${label}`}
           className="grid h-8 w-8 place-items-center rounded-[8px] text-muted-foreground hover:text-foreground"
         >

@@ -6,15 +6,15 @@
 
 ## 构建、检查与本地开发
 
-统一使用 Bun，不要混用 npm、yarn 或 pnpm。
+统一使用 pnpm，不要混用 npm、yarn 或 Bun。
 
-- `bun install`：安装锁定在 `bun.lock` 中的依赖。
-- `bun run dev`：启动本地开发服务器，默认地址为 `http://localhost:3000`。
-- `bun run build`：执行生产构建并检查 Next.js 集成问题。
-- `bun run lint`：运行 ESLint 与 Prettier 规则检查。
-- `bun run format`：格式化仓库文件。
-- `bun run preview`：通过 OpenNext 和 Wrangler 本地预览 Cloudflare 构建。
-- `bun run deploy`：构建并部署到 Cloudflare Workers；仅在明确授权后执行。
+- `pnpm install`：安装锁定在 `pnpm-lock.yaml` 中的依赖。
+- `pnpm dev`：启动本地开发服务器，默认地址为 `http://localhost:3000`。
+- `pnpm build`：执行生产构建并检查 Next.js 集成问题。
+- `pnpm lint`：运行 ESLint 与 Prettier 规则检查。
+- `pnpm format`：格式化仓库文件。
+- `pnpm preview`：通过 OpenNext 和 Wrangler 本地预览 Cloudflare 构建。
+- `pnpm deploy`：构建并部署到 Cloudflare Workers；仅在明确授权后执行。
 
 ## 编码风格与命名约定
 
@@ -22,7 +22,7 @@
 
 ## 测试与验证
 
-当前未配置测试框架、覆盖率门槛或 `test` 脚本。每次修改至少运行 `bun run lint` 和 `bun run build`，并手动验证受影响路由。新增测试基础设施前先达成共识；测试文件建议与模块同目录，命名为 `*.test.ts` 或 `*.test.tsx`。
+当前未配置测试框架、覆盖率门槛或 `test` 脚本。每次修改至少运行 `pnpm lint` 和 `pnpm build`，并手动验证受影响路由。新增测试基础设施前先达成共识；测试文件建议与模块同目录，命名为 `*.test.ts` 或 `*.test.tsx`。
 
 ## 提交与合并请求
 

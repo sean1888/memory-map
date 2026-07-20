@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { MapPin, Compass, Calendar, Cloud, Users, Plus, Smartphone, Camera } from "lucide-react";
 import { CompareSlider } from "@/components/scene/CompareSlider";
 import {
@@ -14,6 +15,15 @@ import {
 } from "@/lib/sceneData";
 
 type Mode = "single" | "compare" | "all";
+
+const SceneMapboxMap = dynamic(() => import("@/components/map/SceneMapboxMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute inset-0 grid place-items-center bg-surface-2 text-sm text-muted-foreground">
+      地图加载中…
+    </div>
+  ),
+});
 
 export function SceneDesktop() {
   const [activeSceneId, setActiveSceneId] = useState<string>(defaultScene.id);
@@ -329,44 +339,15 @@ function MapPanel({
         className="relative overflow-hidden rounded-[8px] border border-border bg-surface-2"
         style={{ aspectRatio: "4 / 3" }}
       >
-        <FauxLakeMap />
-        {scenes.map((s) => {
-          const active = s.id === activeSceneId;
-          const positions: Record<string, { x: number; y: number }> = {
-            "shiqiao-ne": { x: 42, y: 58 },
-            duanqiao: { x: 62, y: 44 },
-            baodi: { x: 30, y: 38 },
-          };
-          const pos = positions[s.id] ?? { x: 50, y: 50 };
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onSceneChange(s.id)}
-              className="absolute -translate-x-1/2 -translate-y-full cursor-pointer hover:scale-105 transition-transform"
-              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-              aria-label={`切换到视角：${s.title}`}
-              aria-pressed={active}
-            >
-              <span className="flex flex-col items-center">
-                <span
-                  className={`inline-flex items-center gap-1 whitespace-nowrap rounded-[8px] border bg-background px-2 py-1 text-[11px] shadow-sm ${
-                    active ? "border-accent text-foreground" : "border-border text-muted-foreground"
-                  }`}
-                >
-                  <MapPin size={11} className={active ? "text-accent" : ""} />
-                  {s.title}
-                  <span className="text-muted-foreground">
-                    · {moments.filter((m) => m.sceneId === s.id).length}
-                  </span>
-                </span>
-                <span
-                  className={`mt-0.5 h-2 w-2 rotate-45 ${active ? "bg-accent" : "bg-muted-foreground/70"}`}
-                />
-              </span>
-            </button>
-          );
-        })}
+        <SceneMapboxMap
+          center={{ latitude: place.latitude, longitude: place.longitude }}
+          scenes={scenes.map((scene) => ({
+            ...scene,
+            momentCount: moments.filter((moment) => moment.sceneId === scene.id).length,
+          }))}
+          activeSceneId={activeSceneId}
+          onSceneChange={onSceneChange}
+        />
         <div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-1.5 rounded-[8px] bg-background/85 px-2 py-1 text-[11px] text-muted-foreground">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
           {activeMomentCount} 个时刻，{activeMomentCount} 位记录者
@@ -389,54 +370,5 @@ function MapPanel({
         <Plus size={15} /> 添加这个视角的新时刻
       </Link>
     </div>
-  );
-}
-
-function FauxLakeMap() {
-  // Very abstract West Lake shore illustration: no external map API.
-  return (
-    <svg
-      viewBox="0 0 400 300"
-      preserveAspectRatio="none"
-      className="absolute inset-0 h-full w-full"
-      aria-hidden
-    >
-      {/* land */}
-      <rect x="0" y="0" width="400" height="300" fill="rgba(0,0,0,0.03)" />
-      {/* lake */}
-      <path
-        d="M 60 150 Q 120 90 220 100 T 380 170 L 380 300 L 60 300 Z"
-        fill="rgba(181,58,43,0.05)"
-      />
-      {/* shoreline */}
-      <path
-        d="M 60 150 Q 120 90 220 100 T 380 170"
-        stroke="rgba(0,0,0,0.25)"
-        strokeWidth="1.2"
-        fill="none"
-      />
-      {/* road along shore */}
-      <path
-        d="M 40 165 Q 130 110 230 118 T 380 190"
-        stroke="rgba(181,58,43,0.55)"
-        strokeWidth="1.4"
-        fill="none"
-        strokeDasharray="4 3"
-      />
-      {/* street grid on land */}
-      {Array.from({ length: 6 }).map((_, i) => (
-        <line
-          key={`h${i}`}
-          x1="0"
-          x2="400"
-          y1={i * 22 + 10}
-          y2={i * 22 + 10}
-          stroke="rgba(0,0,0,0.06)"
-        />
-      ))}
-      {Array.from({ length: 10 }).map((_, i) => (
-        <line key={`v${i}`} x1={i * 42} x2={i * 42} y1="0" y2="140" stroke="rgba(0,0,0,0.06)" />
-      ))}
-    </svg>
   );
 }
